@@ -82,13 +82,14 @@ adminPassword: "123456"
 
 ### GitHub Pages
 
-项目已内置 GitHub Actions 自动部署配置：`.github/workflows/deploy.yml`。
+项目可使用 `gh-pages` 分支部署，这种方式不需要后端服务。
 
-1. 将代码推送到 GitHub 仓库的 `main` 分支。
-2. 进入仓库 `Settings` → `Pages`。
-3. 在 `Build and deployment` 中选择 `GitHub Actions`。
-4. 等待 `Deploy to GitHub Pages` 工作流完成。
-5. 部署地址通常是 `https://你的用户名.github.io/仓库名/`。
+1. 执行 `npm run build`。
+2. 将 `dist/` 目录内容推送到仓库的 `gh-pages` 分支。
+3. 进入仓库 `Settings` → `Pages`。
+4. 在 `Build and deployment` 中选择 `Deploy from a branch`。
+5. 分支选择 `gh-pages`，目录选择 `/ (root)`。
+6. 部署地址通常是 `https://你的用户名.github.io/仓库名/`。
 
 `vite.config.ts` 已配置 `base: "./"`，适合部署到 GitHub Pages 的子路径。
 
