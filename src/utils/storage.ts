@@ -12,6 +12,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   showEstimatedTime: true,
   darkMode: false,
   onboarded: false,
+  publishedTasksVersion: undefined,
 };
 
 const canUseStorage = (): boolean => {

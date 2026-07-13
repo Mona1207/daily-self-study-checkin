@@ -23,6 +23,7 @@ export interface AppSettings {
   showEstimatedTime: boolean;
   darkMode: boolean;
   onboarded: boolean;
+  publishedTasksVersion?: string;
 }
 
 export interface ExportData {

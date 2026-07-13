@@ -13,6 +13,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { useSettings } from "./hooks/useSettings";
 import { useTasks } from "./hooks/useTasks";
 import { createDemoTasks } from "./data/demoTasks";
+import { PUBLISHED_TASKS_VERSION, publishedTasks } from "./data/publishedTasks";
 import { getTodayString } from "./utils/date";
 import { summarizeDay } from "./utils/statistics";
 
@@ -25,6 +26,24 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", settings.darkMode);
   }, [settings.darkMode]);
+
+  useEffect(() => {
+    if (settings.publishedTasksVersion === PUBLISHED_TASKS_VERSION) return;
+
+    const taskMap = new Map(tasks.map((task) => [task.id, task]));
+    publishedTasks.forEach((task) => {
+      if (!taskMap.has(task.id)) {
+        taskMap.set(task.id, task);
+      }
+    });
+
+    replaceTasks(Array.from(taskMap.values()));
+    setSettings({
+      ...settings,
+      onboarded: true,
+      publishedTasksVersion: PUBLISHED_TASKS_VERSION,
+    });
+  }, [replaceTasks, setSettings, settings, tasks]);
 
   const notify = (type: ToastType, message: string) => {
     const id = crypto.randomUUID();
