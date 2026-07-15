@@ -1,9 +1,10 @@
 import { StudyTask } from "../types/task";
+import { normalizeTask } from "../utils/migrations";
 
 export const PUBLISHED_TASKS_VERSION = "2026-07-14-v1";
 
 // 已发布任务位置：更新这个列表并提升 PUBLISHED_TASKS_VERSION 后，网站会把新任务合并到本地数据。
-export const publishedTasks: StudyTask[] = [
+const rawPublishedTasks = [
   {
     id: "published-2026-07-13-chinese-guancanghai",
     date: "2026-07-13",
@@ -60,3 +61,5 @@ export const publishedTasks: StudyTask[] = [
     createdAt: "2026-07-14T00:00:00.000+08:00",
   },
 ];
+
+export const publishedTasks: StudyTask[] = rawPublishedTasks.map(normalizeTask);

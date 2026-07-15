@@ -1,13 +1,27 @@
-import { AppSettings, ExportData, StudyTask } from "../types/task";
+import { AppDatabase, AppSettings, ExportData, StudyTask } from "../types/task";
 import { getTodayString } from "./date";
 import { EXPORT_VERSION } from "./storage";
 
-export const buildExportData = (tasks: StudyTask[], settings: AppSettings): ExportData => ({
-  version: EXPORT_VERSION,
-  exportedAt: new Date().toISOString(),
-  tasks,
-  settings,
-});
+export const buildExportData = (databaseOrTasks: AppDatabase | StudyTask[], settings?: AppSettings): ExportData => {
+  if (Array.isArray(databaseOrTasks)) {
+    return {
+      version: EXPORT_VERSION,
+      exportedAt: new Date().toISOString(),
+      tasks: databaseOrTasks,
+      settings: settings ?? {},
+    };
+  }
+  return {
+    version: EXPORT_VERSION,
+    exportedAt: new Date().toISOString(),
+    tasks: databaseOrTasks.tasks,
+    settings: databaseOrTasks.settings,
+    recurringTemplates: databaseOrTasks.recurringTemplates,
+    studySessions: databaseOrTasks.studySessions,
+    reflections: databaseOrTasks.reflections,
+    evidences: databaseOrTasks.evidences,
+  };
+};
 
 export const downloadJson = (data: unknown, filename: string): void => {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
@@ -30,9 +44,10 @@ export const readJsonFile = async (file: File): Promise<unknown> => {
 
 export const buildTemplateData = (): ExportData => {
   const today = getTodayString();
+  const now = new Date().toISOString();
   return {
     version: EXPORT_VERSION,
-    exportedAt: new Date().toISOString(),
+    exportedAt: now,
     tasks: [
       {
         id: "template-task-1",
@@ -41,19 +56,25 @@ export const buildTemplateData = (): ExportData => {
         subject: "数学",
         description: "这里填写任务说明",
         estimatedMinutes: 30,
+        actualSeconds: 0,
         priority: "medium",
+        status: "pending",
+        evidenceRequirement: "text",
+        postponeHistory: [],
+        createdAt: now,
+        updatedAt: now,
         completed: false,
-        createdAt: new Date().toISOString(),
       },
     ],
     settings: {
       studentName: "张小明",
-      adminPassword: "123456",
-      dailyGoal: 4,
-      enableAnimations: true,
+      dailyTarget: 4,
+      animationsEnabled: true,
       showEstimatedTime: true,
       darkMode: false,
       onboarded: true,
+      defaultRecurringGenerateDays: 30,
+      requireAdminPasswordEverySession: true,
     },
   };
 };

@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { BarChart3, CalendarDays, ClipboardList, LockKeyhole, Settings } from "lucide-react";
 import { AppSettings } from "../../types/task";
+import { PwaInstallButton } from "../pwa/PwaInstallButton";
 
 export type PageKey = "today" | "calendar" | "statistics" | "admin" | "settings";
 
@@ -15,7 +16,7 @@ const navItems: Array<{ key: PageKey; label: string; icon: typeof ClipboardList 
   { key: "today", label: "今日任务", icon: ClipboardList },
   { key: "calendar", label: "学习日历", icon: CalendarDays },
   { key: "statistics", label: "学习统计", icon: BarChart3 },
-  { key: "admin", label: "任务管理", icon: LockKeyhole },
+  { key: "admin", label: "管理模式", icon: LockKeyhole },
   { key: "settings", label: "个性设置", icon: Settings },
 ];
 
@@ -50,9 +51,10 @@ export function AppShell({ activePage, onNavigate, settings, children }: AppShel
             );
           })}
         </nav>
-        <div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+        <div className="absolute bottom-5 left-5 right-5 space-y-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-300">
           <div className="font-semibold text-slate-700 dark:text-slate-100">{settings.studentName}</div>
-          <div>每日目标 {settings.dailyGoal} 项任务</div>
+          <div>每日目标 {settings.dailyTarget} 项任务</div>
+          <PwaInstallButton />
         </div>
       </aside>
 

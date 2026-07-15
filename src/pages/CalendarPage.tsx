@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { AppSettings, StudyTask } from "../types/task";
+import { AppSettings, DailyReflection, StudyTask } from "../types/task";
 import { Button } from "../components/common/Button";
 import { Card } from "../components/common/Card";
 import { TaskCard } from "../components/tasks/TaskCard";
@@ -11,6 +11,7 @@ import { sortTasks } from "../utils/taskSort";
 interface CalendarPageProps {
   tasks: StudyTask[];
   settings: AppSettings;
+  reflections?: DailyReflection[];
 }
 
 const dotClass = {
@@ -20,7 +21,7 @@ const dotClass = {
   empty: "",
 };
 
-export function CalendarPage({ tasks, settings }: CalendarPageProps) {
+export function CalendarPage({ tasks, settings, reflections = [] }: CalendarPageProps) {
   const today = getTodayString();
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(today);
@@ -66,6 +67,7 @@ export function CalendarPage({ tasks, settings }: CalendarPageProps) {
             {days.map((day) => {
               const dateString = toDateString(day);
               const summary = summarizeDay(tasks, dateString);
+              const reflected = reflections.some((reflection) => reflection.date === dateString);
               const active = selectedDate === dateString;
               const current = today === dateString;
               const muted = !isSameMonth(day, monthCursor.getFullYear(), monthCursor.getMonth());
@@ -85,6 +87,7 @@ export function CalendarPage({ tasks, settings }: CalendarPageProps) {
                       className={`mt-1 h-2 w-2 rounded-full ${dotClass[summary.status]} ${active ? "ring-2 ring-white" : ""}`}
                     />
                   )}
+                  {reflected && <span className="mt-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-200">总结</span>}
                   {current && <span className="mt-1 text-[10px] font-semibold">今天</span>}
                 </button>
               );

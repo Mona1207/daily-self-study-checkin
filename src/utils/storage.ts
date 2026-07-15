@@ -1,19 +1,27 @@
-import { AppSettings, ExportData, StudyTask } from "../types/task";
+import {
+  AppDatabase,
+  AppSettings,
+  CURRENT_DATA_VERSION,
+  DataSnapshot,
+  EvidenceImage,
+  ExportData,
+  RecurringTaskTemplate,
+  StudySession,
+  StudyTask,
+  TaskEvidence,
+  TaskTimerState,
+} from "../types/task";
+import { defaultSettings, migrateData, normalizeTask } from "./migrations";
 
-export const TASKS_STORAGE_KEY = "self-study-tasks";
-export const SETTINGS_STORAGE_KEY = "self-study-settings";
-export const EXPORT_VERSION = "1.0.0";
+export const APP_DB_STORAGE_KEY = "self-study-app-db-v2";
+export const LEGACY_TASKS_STORAGE_KEY = "self-study-tasks";
+export const LEGACY_SETTINGS_STORAGE_KEY = "self-study-settings";
+export const SNAPSHOT_STORAGE_KEY = "self-study-snapshots-v2";
+export const ADMIN_SESSION_KEY = "self-study-admin-session";
+export const EXPORT_VERSION = CURRENT_DATA_VERSION;
 
-export const DEFAULT_SETTINGS: AppSettings = {
-  studentName: "张小明",
-  dailyGoal: 4,
-  adminPassword: "123456",
-  enableAnimations: true,
-  showEstimatedTime: true,
-  darkMode: false,
-  onboarded: false,
-  publishedTasksVersion: undefined,
-};
+const IMAGE_DB_NAME = "self-study-evidence-images";
+const IMAGE_STORE = "images";
 
 const canUseStorage = (): boolean => {
   try {
@@ -33,15 +41,12 @@ const readJson = <T,>(key: string, fallback: T): T => {
     if (!raw) return fallback;
     return JSON.parse(raw) as T;
   } catch {
-    window.localStorage.removeItem(key);
     return fallback;
   }
 };
 
 const writeJson = <T,>(key: string, value: T): void => {
-  if (!canUseStorage()) {
-    throw new Error("当前浏览器不支持 localStorage，无法保存数据。");
-  }
+  if (!canUseStorage()) throw new Error("当前浏览器不支持 localStorage，无法保存数据。");
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
@@ -49,91 +54,245 @@ const writeJson = <T,>(key: string, value: T): void => {
   }
 };
 
-export const normalizeTask = (task: StudyTask): StudyTask => ({
-  ...task,
-  id: String(task.id || crypto.randomUUID()),
-  title: String(task.title || ""),
-  date: String(task.date || ""),
-  subject: task.subject,
-  priority: task.priority ?? "medium",
-  completed: Boolean(task.completed),
-  createdAt: task.createdAt || new Date().toISOString(),
+export const createEmptyDatabase = (): AppDatabase => ({
+  version: CURRENT_DATA_VERSION,
+  updatedAt: new Date().toISOString(),
+  tasks: [],
+  recurringTemplates: [],
+  studySessions: [],
+  reflections: [],
+  evidences: [],
+  settings: defaultSettings(),
 });
 
-export const getTasks = (): StudyTask[] => {
-  const tasks = readJson<StudyTask[]>(TASKS_STORAGE_KEY, []);
-  return Array.isArray(tasks) ? tasks.map(normalizeTask).filter((task) => task.date && task.title) : [];
+const loadRawDatabase = (): unknown => {
+  const current = readJson<unknown | null>(APP_DB_STORAGE_KEY, null);
+  if (current) return current;
+  const legacyTasks = readJson<StudyTask[]>(LEGACY_TASKS_STORAGE_KEY, []);
+  const legacySettings = readJson<Partial<AppSettings>>(LEGACY_SETTINGS_STORAGE_KEY, {});
+  if (legacyTasks.length || Object.keys(legacySettings).length) {
+    return { tasks: legacyTasks, settings: legacySettings };
+  }
+  return createEmptyDatabase();
 };
 
-export const saveTasks = (tasks: StudyTask[]): void => {
-  const unique = new Map<string, StudyTask>();
-  tasks.forEach((task) => unique.set(task.id, normalizeTask(task)));
-  writeJson(TASKS_STORAGE_KEY, Array.from(unique.values()));
+export const saveSnapshot = (reason: string, data = getDatabase()): void => {
+  const snapshots = readJson<DataSnapshot[]>(SNAPSHOT_STORAGE_KEY, []);
+  const next = [
+    { id: crypto.randomUUID(), createdAt: new Date().toISOString(), reason, data },
+    ...snapshots,
+  ].slice(0, 3);
+  writeJson(SNAPSHOT_STORAGE_KEY, next);
 };
 
-export const addTask = (task: Omit<StudyTask, "id" | "createdAt" | "completed" | "completedAt">): StudyTask => {
-  const next: StudyTask = {
-    ...task,
-    id: crypto.randomUUID(),
-    completed: false,
-    createdAt: new Date().toISOString(),
-  };
-  saveTasks([...getTasks(), next]);
+export const getSnapshots = (): DataSnapshot[] => readJson<DataSnapshot[]>(SNAPSHOT_STORAGE_KEY, []);
+
+export const clearSnapshots = (): void => writeJson(SNAPSHOT_STORAGE_KEY, []);
+
+export const restoreSnapshot = (id?: string): AppDatabase => {
+  const snapshots = getSnapshots();
+  const snapshot = id ? snapshots.find((item) => item.id === id) : snapshots[0];
+  if (!snapshot) throw new Error("没有可恢复的本地快照。");
+  saveDatabase(snapshot.data, false);
+  return snapshot.data;
+};
+
+export const getDatabase = (): AppDatabase => {
+  const raw = loadRawDatabase();
+  const migrated = migrateData(raw);
+  const rawVersion = typeof raw === "object" && raw && "version" in raw ? Number((raw as { version?: unknown }).version) : 1;
+  if (rawVersion !== CURRENT_DATA_VERSION || !readJson<unknown | null>(APP_DB_STORAGE_KEY, null)) {
+    try {
+      saveSnapshot("升级前自动快照", migrated);
+      saveDatabase(migrated, false);
+    } catch {
+      // The app can still run with migrated in-memory data. UI operations will surface save errors.
+    }
+  }
+  return applyOverdue(migrated);
+};
+
+export const saveDatabase = (database: AppDatabase, snapshot = true): void => {
+  if (snapshot) {
+    try {
+      const current = readJson<AppDatabase | null>(APP_DB_STORAGE_KEY, null);
+      if (current) saveSnapshot("数据修改前快照", current);
+    } catch {
+      // Snapshot failure should not block a normal save.
+    }
+  }
+  writeJson(APP_DB_STORAGE_KEY, { ...database, version: CURRENT_DATA_VERSION, updatedAt: new Date().toISOString() });
+};
+
+export const applyOverdue = (database: AppDatabase): AppDatabase => {
+  const today = new Date().toISOString().slice(0, 10);
+  let changed = false;
+  const tasks = database.tasks.map((task) => {
+    if ((task.status === "pending" || task.status === "in_progress") && task.date < today) {
+      changed = true;
+      return { ...task, status: "overdue" as const, completed: false, updatedAt: new Date().toISOString() };
+    }
+    return { ...task, completed: task.status === "completed" };
+  });
+  const next = { ...database, tasks };
+  if (changed) {
+    try {
+      saveDatabase(next, false);
+    } catch {
+      return next;
+    }
+  }
   return next;
 };
 
-export const updateTask = (taskId: string, patch: Partial<StudyTask>): StudyTask[] => {
-  const tasks = getTasks().map((task) => (task.id === taskId ? { ...task, ...patch } : task));
-  saveTasks(tasks);
-  return tasks;
+const updateDatabase = (updater: (database: AppDatabase) => AppDatabase): AppDatabase => {
+  const next = updater(getDatabase());
+  saveDatabase(next);
+  return next;
 };
 
-export const deleteTask = (taskId: string): StudyTask[] => {
-  const tasks = getTasks().filter((task) => task.id !== taskId);
-  saveTasks(tasks);
-  return tasks;
+export const getTasks = (): StudyTask[] => getDatabase().tasks;
+
+export const saveTasks = (tasks: StudyTask[]): void => {
+  const unique = new Map<string, StudyTask>();
+  tasks.map(normalizeTask).forEach((task) => unique.set(task.id, { ...task, completed: task.status === "completed" }));
+  updateDatabase((database) => ({ ...database, tasks: Array.from(unique.values()) }));
 };
 
-export const getSettings = (): AppSettings => {
-  return { ...DEFAULT_SETTINGS, ...readJson<Partial<AppSettings>>(SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS) };
-};
+export const getSettings = (): AppSettings => getDatabase().settings;
 
 export const saveSettings = (settings: AppSettings): void => {
-  writeJson(SETTINGS_STORAGE_KEY, settings);
+  updateDatabase((database) => ({ ...database, settings }));
+};
+
+export const getRecurringTemplates = (): RecurringTaskTemplate[] => getDatabase().recurringTemplates;
+
+export const saveRecurringTemplates = (recurringTemplates: RecurringTaskTemplate[]): void => {
+  updateDatabase((database) => ({ ...database, recurringTemplates }));
+};
+
+export const getStudySessions = (): StudySession[] => getDatabase().studySessions;
+
+export const saveStudySessions = (studySessions: StudySession[]): void => {
+  updateDatabase((database) => ({ ...database, studySessions }));
+};
+
+export const getTimerState = (): TaskTimerState | undefined => getDatabase().timerState;
+
+export const saveTimerState = (timerState?: TaskTimerState): void => {
+  updateDatabase((database) => ({ ...database, timerState }));
+};
+
+export const getEvidences = (): TaskEvidence[] => getDatabase().evidences;
+
+export const saveEvidences = (evidences: TaskEvidence[]): void => {
+  updateDatabase((database) => ({ ...database, evidences }));
+};
+
+export const getReflections = () => getDatabase().reflections;
+
+export const saveReflections = (reflections: AppDatabase["reflections"]): void => {
+  updateDatabase((database) => ({ ...database, reflections }));
 };
 
 export const validateExportData = (value: unknown): ExportData => {
-  if (!value || typeof value !== "object") {
-    throw new Error("导入文件格式错误：根数据必须是对象。");
-  }
-  const data = value as ExportData;
-  if (!Array.isArray(data.tasks)) {
-    throw new Error("导入文件格式错误：tasks 必须是数组。");
-  }
-  if (!data.settings || typeof data.settings !== "object") {
-    throw new Error("导入文件格式错误：缺少 settings。");
-  }
-  return data;
+  const migrated = migrateData(value);
+  return {
+    version: migrated.version,
+    exportedAt: new Date().toISOString(),
+    tasks: migrated.tasks,
+    settings: migrated.settings,
+    recurringTemplates: migrated.recurringTemplates,
+    studySessions: migrated.studySessions,
+    reflections: migrated.reflections,
+    evidences: migrated.evidences,
+  };
 };
 
-export const importTasks = (incoming: StudyTask[], mode: "replace" | "merge"): StudyTask[] => {
-  const normalized = incoming.map(normalizeTask).filter((task) => task.date && task.title);
+export const importDatabase = (incoming: unknown, mode: "replace" | "merge"): { database: AppDatabase; imported: number; skipped: number; errors: number } => {
+  const migrated = migrateData(incoming);
+  const current = getDatabase();
   if (mode === "replace") {
-    saveTasks(normalized);
-    return normalized;
+    saveDatabase(migrated);
+    return { database: migrated, imported: migrated.tasks.length, skipped: 0, errors: 0 };
   }
-
-  const map = new Map<string, StudyTask>();
-  getTasks().forEach((task) => map.set(task.id, task));
-  normalized.forEach((task) => map.set(task.id, task));
-  const merged = Array.from(map.values());
-  saveTasks(merged);
-  return merged;
+  const taskMap = new Map(current.tasks.map((task) => [task.id, task]));
+  let imported = 0;
+  let skipped = 0;
+  migrated.tasks.forEach((task) => {
+    if (taskMap.has(task.id)) skipped += 1;
+    else imported += 1;
+    taskMap.set(task.id, task);
+  });
+  const next: AppDatabase = {
+    ...current,
+    tasks: Array.from(taskMap.values()),
+    recurringTemplates: [...current.recurringTemplates, ...migrated.recurringTemplates.filter((item) => !current.recurringTemplates.some((old) => old.id === item.id))],
+    studySessions: [...current.studySessions, ...migrated.studySessions.filter((item) => !current.studySessions.some((old) => old.id === item.id))],
+    reflections: [...current.reflections.filter((item) => !migrated.reflections.some((nextItem) => nextItem.date === item.date)), ...migrated.reflections],
+    evidences: [...current.evidences.filter((item) => !migrated.evidences.some((nextItem) => nextItem.id === item.id)), ...migrated.evidences],
+    settings: { ...current.settings, ...migrated.settings, onboarded: true },
+  };
+  saveDatabase(next);
+  return { database: next, imported, skipped, errors: 0 };
 };
 
-export const exportTasks = (): ExportData => ({
-  version: EXPORT_VERSION,
-  exportedAt: new Date().toISOString(),
-  tasks: getTasks(),
-  settings: getSettings(),
-});
+export const exportTasks = (): ExportData => {
+  const database = getDatabase();
+  return {
+    version: EXPORT_VERSION,
+    exportedAt: new Date().toISOString(),
+    tasks: database.tasks,
+    settings: database.settings,
+    recurringTemplates: database.recurringTemplates,
+    studySessions: database.studySessions,
+    reflections: database.reflections,
+    evidences: database.evidences,
+  };
+};
+
+const openImageDb = (): Promise<IDBDatabase> =>
+  new Promise((resolve, reject) => {
+    if (!("indexedDB" in window)) {
+      reject(new Error("当前浏览器不支持 IndexedDB，无法保存图片证明。"));
+      return;
+    }
+    const request = indexedDB.open(IMAGE_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(IMAGE_STORE)) db.createObjectStore(IMAGE_STORE, { keyPath: "id" });
+    };
+    request.onerror = () => reject(new Error("IndexedDB 打开失败，请检查浏览器隐私设置。"));
+    request.onsuccess = () => resolve(request.result);
+  });
+
+const imageTransaction = async <T,>(mode: IDBTransactionMode, action: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> => {
+  const db = await openImageDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(IMAGE_STORE, mode);
+    const request = action(transaction.objectStore(IMAGE_STORE));
+    request.onerror = () => reject(new Error("图片证明保存或读取失败，可能是存储空间不足。"));
+    request.onsuccess = () => resolve(request.result);
+    transaction.oncomplete = () => db.close();
+    transaction.onerror = () => {
+      db.close();
+      reject(new Error("图片证明保存或读取失败，可能是存储空间不足。"));
+    };
+  });
+};
+
+export const saveEvidenceImage = async (image: EvidenceImage): Promise<void> => {
+  await imageTransaction("readwrite", (store) => store.put(image));
+};
+
+export const getEvidenceImage = async (id: string): Promise<EvidenceImage | undefined> => {
+  return imageTransaction<EvidenceImage | undefined>("readonly", (store) => store.get(id));
+};
+
+export const deleteEvidenceImage = async (id: string): Promise<void> => {
+  await imageTransaction("readwrite", (store) => store.delete(id));
+};
+
+export const listEvidenceImages = async (): Promise<EvidenceImage[]> => {
+  return imageTransaction<EvidenceImage[]>("readonly", (store) => store.getAll());
+};

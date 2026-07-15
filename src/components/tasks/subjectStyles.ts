@@ -5,8 +5,12 @@ import {
   Dumbbell,
   FlaskConical,
   Globe2,
+  Landmark,
   Languages,
   LucideIcon,
+  Microscope,
+  Scale,
+  Sparkles,
 } from "lucide-react";
 import { Subject } from "../../types/task";
 
@@ -17,5 +21,9 @@ export const subjectStyles: Record<Subject, { icon: LucideIcon; className: strin
   物理: { icon: Atom, className: "bg-violet-50 text-violet-600 ring-violet-100 dark:bg-violet-500/15 dark:text-violet-200" },
   化学: { icon: FlaskConical, className: "bg-emerald-50 text-emerald-600 ring-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-200" },
   地理: { icon: Globe2, className: "bg-orange-50 text-orange-600 ring-orange-100 dark:bg-orange-500/15 dark:text-orange-200" },
+  历史: { icon: Landmark, className: "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/15 dark:text-amber-200" },
+  生物: { icon: Microscope, className: "bg-teal-50 text-teal-700 ring-teal-100 dark:bg-teal-500/15 dark:text-teal-200" },
+  政治: { icon: Scale, className: "bg-blue-50 text-blue-700 ring-blue-100 dark:bg-blue-500/15 dark:text-blue-200" },
   运动: { icon: Dumbbell, className: "bg-lime-50 text-lime-700 ring-lime-100 dark:bg-lime-500/15 dark:text-lime-200" },
+  其他: { icon: Sparkles, className: "bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-200" },
 };
