@@ -3,6 +3,7 @@ import { Moon, Save, Sparkles, Sun } from "lucide-react";
 import { AppSettings } from "../types/task";
 import { Button } from "../components/common/Button";
 import { Card } from "../components/common/Card";
+import { AppUpdateCard } from "../components/update/AppUpdateCard";
 import { hashPassword } from "../utils/migrations";
 
 interface SettingsPageProps {
@@ -89,6 +90,7 @@ export function SettingsPage({ settings, onSave, notify }: SettingsPageProps) {
           本项目没有后端，不同设备之间不会自动同步，需要通过导出和导入数据完成任务传递。本地管理密码不能提供真正的安全保护，它只能防止普通误操作。
         </p>
       </Card>
+      <AppUpdateCard notify={notify} />
     </div>
   );
 }
