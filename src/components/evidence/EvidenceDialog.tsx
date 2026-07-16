@@ -86,9 +86,9 @@ export function EvidenceDialog({ task, evidence, open, onClose, onSave, notify }
     const needsText = task.evidenceRequirement === "text" || task.evidenceRequirement === "text_and_image";
     const needsNumber = task.evidenceRequirement === "number";
     const needsImage = task.evidenceRequirement === "image" || task.evidenceRequirement === "text_and_image";
-    if (needsText && !text.trim()) return notify("error", "请填写文字证明后再打卡。");
+    if (needsText && !text.trim()) return notify("error", "请填写文字记录后再完成。");
     if (needsNumber && numberValue === "") return notify("error", "请填写完成数量后再打卡。");
-    if (needsImage && images.length === 0) return notify("error", "请上传图片证明后再打卡。");
+    if (needsImage && images.length === 0) return notify("error", "请上传图片记录后再完成。");
     const now = new Date().toISOString();
     const next: TaskEvidence = {
       id: evidence?.id ?? crypto.randomUUID(),
@@ -101,20 +101,20 @@ export function EvidenceDialog({ task, evidence, open, onClose, onSave, notify }
       updatedAt: now,
     };
     onSave(next);
-    notify("success", "完成证明已保存。");
+    notify("success", "完成记录已保存。");
     onClose();
   };
 
   return (
-    <Modal title={task ? `提交完成证明：${task.title}` : "完成证明"} open={open} onClose={onClose}>
+    <Modal title={task ? `添加完成记录：${task.title}` : "完成记录"} open={open} onClose={onClose}>
       {task && (
         <form className="space-y-5" onSubmit={submit}>
           <div className="rounded-2xl bg-indigo-50 p-4 text-sm text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">
-            证明要求：{EVIDENCE_LABEL[task.evidenceRequirement]}
+            记录要求：{EVIDENCE_LABEL[task.evidenceRequirement]}
           </div>
           {(task.evidenceRequirement === "text" || task.evidenceRequirement === "text_and_image") && (
             <label className="text-sm font-semibold">
-              文字说明 / 学习心得
+              文字记录
               <textarea className={`${inputClass} mt-1 min-h-28`} value={text} onChange={(event) => setText(event.target.value)} />
             </label>
           )}
@@ -135,7 +135,7 @@ export function EvidenceDialog({ task, evidence, open, onClose, onSave, notify }
                 {images.map((image) => (
                   <div key={image.id} className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
                     <a href={image.url} target="_blank" rel="noreferrer">
-                      <img src={image.url} alt="完成证明" className="h-full w-full object-cover" />
+                      <img src={image.url} alt="完成记录" className="h-full w-full object-cover" />
                     </a>
                     <button type="button" className="absolute right-1 top-1 rounded-full bg-rose-500 p-1 text-white" onClick={() => removeImage(image.id)} aria-label="删除图片">
                       <Trash2 size={14} />
@@ -145,7 +145,7 @@ export function EvidenceDialog({ task, evidence, open, onClose, onSave, notify }
               </div>
             </div>
           )}
-          <Button icon={<Save size={18} />}>保存证明</Button>
+          <Button icon={<Save size={18} />}>保存记录</Button>
         </form>
       )}
     </Modal>

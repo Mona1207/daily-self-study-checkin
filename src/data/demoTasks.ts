@@ -1,7 +1,6 @@
 import { StudyTask } from "../types/task";
 import { getTodayString } from "../utils/date";
 
-// 示例数据位置：首次使用时选择“使用示例数据”会写入这些任务。
 export const createDemoTasks = (): StudyTask[] => {
   const today = getTodayString();
   const now = new Date().toISOString();
@@ -10,12 +9,29 @@ export const createDemoTasks = (): StudyTask[] => {
     {
       id: crypto.randomUUID(),
       date: today,
-      title: "完成一元一次方程练习 10 道",
-      subject: "数学",
-      description: "做完后把错题整理到错题本，并标出不熟练的步骤。",
-      estimatedMinutes: 35,
+      dueTime: "10:30",
+      title: "整理今天最重要的三件事",
+      subject: "工作",
+      description: "把需要优先处理的事项列清楚，先完成最关键的一项。",
+      estimatedMinutes: 20,
       actualSeconds: 0,
       priority: "high",
+      status: "pending",
+      evidenceRequirement: "none",
+      postponeHistory: [],
+      completed: false,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: crypto.randomUUID(),
+      date: today,
+      title: "专注处理一个待办事项",
+      subject: "个人",
+      description: "开始后进入专注计时，完成后记录实际投入时间。",
+      estimatedMinutes: 45,
+      actualSeconds: 0,
+      priority: "medium",
       status: "pending",
       evidenceRequirement: "text",
       postponeHistory: [],
@@ -26,25 +42,9 @@ export const createDemoTasks = (): StudyTask[] => {
     {
       id: crypto.randomUUID(),
       date: today,
-      title: "背诵 20 个单词",
-      subject: "英语",
-      description: "先默写，再用每个新词造一个短句。",
-      estimatedMinutes: 20,
-      actualSeconds: 0,
-      priority: "medium",
-      status: "pending",
-      evidenceRequirement: "number",
-      postponeHistory: [],
-      completed: false,
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: crypto.randomUUID(),
-      date: today,
-      title: "阅读课外书 30 分钟",
-      subject: "语文",
-      description: "记录 3 句喜欢的表达，并写一句自己的理解。",
+      title: "阅读 30 分钟",
+      subject: "阅读",
+      description: "读完后简单记一句今天有用的内容。",
       estimatedMinutes: 30,
       actualSeconds: 0,
       priority: "medium",
@@ -58,9 +58,9 @@ export const createDemoTasks = (): StudyTask[] => {
     {
       id: crypto.randomUUID(),
       date: today,
-      title: "跳绳 15 分钟",
+      title: "活动身体 15 分钟",
       subject: "运动",
-      description: "学习间隙活动一下，保持精力。",
+      description: "散步、拉伸或简单训练都可以。",
       estimatedMinutes: 15,
       actualSeconds: 0,
       priority: "low",

@@ -42,8 +42,8 @@ export function StatisticsPage({ tasks }: StatisticsPageProps) {
       <Card>
         <button className="flex w-full items-center justify-between gap-3 text-left" onClick={() => setSubjectsOpen((value) => !value)}>
           <div>
-            <h2 className="text-xl font-black">各科目学习时长</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">点一下查看每科的学习时长，再点一下收起来。</p>
+            <h2 className="text-xl font-black">各分类专注时长</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">点一下查看每个分类的专注时长，再点一下收起来。</p>
           </div>
           {subjectsOpen ? <ChevronUp className="text-slate-400" size={22} /> : <ChevronDown className="text-slate-400" size={22} />}
         </button>

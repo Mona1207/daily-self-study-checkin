@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
-import { BookOpenCheck, CheckCircle2, Sparkles } from "lucide-react";
+import { CheckCircle2, Import, Plus, Sparkles } from "lucide-react";
 import { AppSettings, DailyReflection, StudyTask, TaskEvidence } from "./types/task";
 import { AppShell, PageKey } from "./components/layout/AppShell";
 import { Button } from "./components/common/Button";
 import { Card } from "./components/common/Card";
-import { ToastContainer, ToastMessage, ToastType } from "./components/common/Toast";
 import { EvidenceDialog } from "./components/evidence/EvidenceDialog";
+import { ToastContainer, ToastMessage, ToastType } from "./components/common/Toast";
 import { TodayPage } from "./pages/TodayPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { StatisticsPage } from "./pages/StatisticsPage";
-import { AdminPage } from "./pages/AdminPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { useTasks } from "./hooks/useTasks";
 import { createDemoTasks } from "./data/demoTasks";
@@ -70,32 +69,34 @@ export default function App() {
   useEffect(() => {
     if (database.recurringTemplates.length === 0) return;
     const created = generateRecurringTasks();
-    if (created > 0) notify("info", `已自动生成 ${created} 个周期任务。`);
+    if (created > 0) notify("info", `已生成 ${created} 个重复任务。`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [database.recurringTemplates.length]);
 
   useEffect(() => {
-    if (isTimerCrossDay(timerState)) {
-      notify("info", "检测到有跨天计时，建议先暂停确认实际学习时长。");
-    }
+    if (isTimerCrossDay(timerState)) notify("info", "检测到有跨天计时，建议先暂停确认实际时长。");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const notify = (type: ToastType, message: string) => {
     const id = crypto.randomUUID();
     setToasts((current) => [...current, { id, type, message }]);
-    window.setTimeout(() => {
-      setToasts((current) => current.filter((toast) => toast.id !== id));
-    }, 3000);
+    window.setTimeout(() => setToasts((current) => current.filter((toast) => toast.id !== id)), 3000);
   };
 
-  const finishOnboarding = (mode: "demo" | "blank") => {
+  const finishOnboarding = (mode: "demo" | "blank" | "import") => {
+    if (mode === "import") {
+      replaceDatabase({ ...database, settings: { ...settings, onboarded: true } });
+      setPage("profile");
+      notify("info", "可以在“我的 > 数据管理”里导入已有数据。");
+      return;
+    }
     replaceDatabase({
       ...database,
       tasks: mode === "demo" ? createDemoTasks() : [],
-      settings: { ...settings, onboarded: true },
+      settings: { ...settings, onboarded: true, userName: settings.userName || "我" },
     });
-    notify(mode === "demo" ? "success" : "info", mode === "demo" ? "示例任务已准备好。" : "已从空白计划开始。");
+    notify(mode === "demo" ? "success" : "info", mode === "demo" ? "示例任务已准备好。" : "开始创建你的第一件事吧。");
   };
 
   const stopTimerForTask = (task: StudyTask) => {
@@ -104,21 +105,12 @@ export default function App() {
 
   const markComplete = (task: StudyTask) => {
     stopTimerForTask(task);
-    updateTask(task.id, {
-      status: "completed",
-      completedAt: new Date().toISOString(),
-      completed: true,
-    });
+    updateTask(task.id, { status: "completed", completedAt: new Date().toISOString(), completed: true });
     const today = getTodayString();
     const nextTasks = tasks.map((item) => (item.id === task.id ? { ...item, status: "completed" as const, completedAt: new Date().toISOString() } : item));
     const summary = summarizeDay(nextTasks, today);
-    if ((task.date === today || task.originalScheduledDate === today) && summary.total > 0 && summary.completed === summary.total) {
-      notify("success", "恭喜你，今天的学习任务全部完成！");
-    } else if ((task.originalScheduledDate ?? task.date) < today) {
-      notify("success", "逾期补做完成。");
-    } else {
-      notify("success", "任务完成，继续加油！");
-    }
+    if ((task.date === today || task.originalDate === today || task.originalScheduledDate === today) && summary.total > 0 && summary.completed === summary.total) notify("success", "今天的任务已完成。");
+    else notify("success", "已完成。");
   };
 
   const handleComplete = (task: StudyTask) => {
@@ -143,83 +135,61 @@ export default function App() {
 
   const handleUndo = (task: StudyTask) => {
     updateTask(task.id, { status: task.date < getTodayString() ? "overdue" : "pending", completedAt: undefined, completed: false });
-    notify("info", "已取消完成状态，完成证明会保留。");
+    notify("info", "已撤销完成。");
   };
 
   const handleStart = (task: StudyTask) => {
     if (timerState?.running && timerState.taskId !== task.id) {
       const oldTask = tasks.find((item) => item.id === timerState.taskId);
-      const ok = window.confirm(`“${oldTask?.title ?? "另一个任务"}”正在计时。是否暂停旧任务并开始当前任务？`);
-      if (!ok) return;
-      startTimer(task, true);
-    } else {
-      startTimer(task, true);
+      if (!window.confirm(`“${oldTask?.title ?? "另一个任务"}”正在计时。是否暂停它并开始当前任务？`)) return;
     }
+    startTimer(task, true);
   };
 
   const handlePostpone = (task: StudyTask, toDate: string, reason?: string, copy = false) => {
     const record = { fromDate: task.date, toDate, reason, postponedAt: new Date().toISOString() };
-    if (copy) {
-      addTask({
-        ...task,
-        date: toDate,
-        originalScheduledDate: task.originalScheduledDate ?? task.date,
-        status: "pending",
-        completedAt: undefined,
-        evidenceId: undefined,
-        actualSeconds: 0,
-        postponeHistory: [...(task.postponeHistory ?? []), record],
-      });
-    } else {
-      updateTask(task.id, {
-        status: "postponed",
-        postponeHistory: [...(task.postponeHistory ?? []), record],
-      });
-      addTask({
-        ...task,
-        date: toDate,
-        originalScheduledDate: task.originalScheduledDate ?? task.date,
-        status: "pending",
-        completedAt: undefined,
-        evidenceId: undefined,
-        actualSeconds: 0,
-        postponeHistory: [...(task.postponeHistory ?? []), record],
-      });
-    }
-    notify("success", copy ? "已复制到新日期。" : "任务已延期。");
+    const nextTask = {
+      ...task,
+      date: toDate,
+      originalDate: task.originalDate ?? task.date,
+      originalScheduledDate: task.originalScheduledDate ?? task.date,
+      status: "pending" as const,
+      completedAt: undefined,
+      evidenceId: undefined,
+      actualSeconds: 0,
+      postponeHistory: [...(task.postponeHistory ?? []), record],
+    };
+    if (!copy) updateTask(task.id, { status: "postponed", postponeHistory: [...(task.postponeHistory ?? []), record] });
+    addTask(nextTask);
+    notify("success", copy ? "已复制到新日期。" : "已延期到新日期。");
   };
 
-  const handleSaveReflection = (reflection: DailyReflection) => saveReflection(reflection);
-
-  const handleSaveSettings = (next: AppSettings) => {
-    replaceDatabase({ ...database, settings: next });
-  };
+  const handleSaveSettings = (next: AppSettings) => replaceDatabase({ ...database, settings: next });
 
   if (!settings.onboarded) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-indigo-50 to-slate-50 px-4 py-8 text-slate-900 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950 dark:text-slate-100">
-        <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-4xl items-center justify-center">
-          <Card className="w-full text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-sky-400 to-indigo-500 text-white">
-              <BookOpenCheck size={34} />
+      <div className="min-h-screen bg-[#F6F7F9] px-4 py-8 text-[#1F2329] dark:bg-slate-950 dark:text-slate-100">
+        <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-xl items-center justify-center">
+          <Card className="w-full">
+            <div className="text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[16px] bg-[#EEF2FF] text-2xl font-semibold text-[#4F6EF7]">清</div>
+              <h1 className="mt-6 text-[22px] font-semibold">欢迎使用今日清单</h1>
+              <p className="mt-3 text-sm leading-6 text-[#6B7280]">把每天要做的事，清楚地安排好。数据只保存在当前设备，不需要注册登录。</p>
             </div>
-            <h1 className="mt-6 text-3xl font-black sm:text-4xl">今日任务</h1>
-            <p className="mx-auto mt-4 max-w-2xl text-slate-600 dark:text-slate-300">
-              这是一个给中学生使用的今日任务网站。所有数据只保存在当前浏览器，本项目没有后端，不同设备之间不会自动同步，需要通过导出和导入数据完成任务传递。
-            </p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <button onClick={() => finishOnboarding("demo")} className="rounded-3xl border border-indigo-100 bg-indigo-50 p-6 text-left transition hover:-translate-y-1 hover:shadow-soft dark:border-indigo-900 dark:bg-indigo-500/15">
-                <Sparkles className="text-indigo-500" size={28} />
-                <h2 className="mt-4 text-xl font-black">使用示例数据</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">预置数学、英语、语文和运动任务，方便马上查看页面效果。</p>
+            <div className="mt-8 space-y-3">
+              <button className="flex w-full items-center gap-3 rounded-[12px] border border-[#E9EBEF] bg-white p-4 text-left dark:border-slate-800 dark:bg-slate-900" onClick={() => finishOnboarding("blank")}>
+                <Plus className="text-[#4F6EF7]" size={22} />
+                <div><div className="font-semibold">创建第一个任务</div><div className="text-sm text-[#6B7280]">从空白清单开始</div></div>
               </button>
-              <button onClick={() => finishOnboarding("blank")} className="rounded-3xl border border-slate-100 bg-white p-6 text-left transition hover:-translate-y-1 hover:shadow-soft dark:border-slate-800 dark:bg-slate-900">
-                <CheckCircle2 className="text-emerald-500" size={28} />
-                <h2 className="mt-4 text-xl font-black">从空白开始</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">不添加任何初始任务，进入后自己添加任务或导入日历文件。</p>
+              <button className="flex w-full items-center gap-3 rounded-[12px] border border-[#E9EBEF] bg-white p-4 text-left dark:border-slate-800 dark:bg-slate-900" onClick={() => finishOnboarding("demo")}>
+                <Sparkles className="text-[#4F6EF7]" size={22} />
+                <div><div className="font-semibold">使用示例任务</div><div className="text-sm text-[#6B7280]">快速看看应用效果</div></div>
+              </button>
+              <button className="flex w-full items-center gap-3 rounded-[12px] border border-[#E9EBEF] bg-white p-4 text-left dark:border-slate-800 dark:bg-slate-900" onClick={() => finishOnboarding("import")}>
+                <Import className="text-[#4F6EF7]" size={22} />
+                <div><div className="font-semibold">导入已有数据</div><div className="text-sm text-[#6B7280]">从备份恢复</div></div>
               </button>
             </div>
-            <div className="mt-6"><Button variant="ghost" onClick={() => replaceDatabase({ ...database, settings: { ...settings, onboarded: true } })}>稍后再说，直接进入</Button></div>
           </Card>
         </div>
         <ToastContainer toasts={toasts} />
@@ -237,6 +207,7 @@ export default function App() {
           sessions={studySessions}
           evidences={evidences}
           reflections={reflections}
+          onAddTask={addTask}
           onComplete={handleComplete}
           onUndo={handleUndo}
           onStart={handleStart}
@@ -244,35 +215,29 @@ export default function App() {
           onResetTimer={(task) => resetTimer(task.id)}
           onEvidence={(task) => { setCompleteAfterEvidence(false); setEvidenceTarget(task); }}
           onPostpone={handlePostpone}
-          onAbandon={(task) => { updateTask(task.id, { status: "abandoned" }); notify("info", "已标记为放弃。"); }}
+          onAbandon={(task) => { updateTask(task.id, { status: "cancelled" }); notify("info", "已取消任务。"); }}
           onRestore={(task) => { updateTask(task.id, { status: task.date < getTodayString() ? "overdue" : "pending" }); notify("success", "任务已恢复。"); }}
-          onSaveReflection={handleSaveReflection}
-          onGoAdmin={() => setPage("admin")}
+          onSaveReflection={saveReflection}
+          onGoCalendar={() => setPage("calendar")}
           notify={notify}
         />
       )}
-      {page === "calendar" && <CalendarPage tasks={tasks} settings={settings} reflections={reflections} />}
+      {page === "calendar" && <CalendarPage tasks={tasks} settings={settings} reflections={reflections} onAddTask={addTask} />}
       {page === "statistics" && <StatisticsPage tasks={tasks} reflections={reflections} />}
-      {page === "admin" && (
-        <AdminPage
+      {page === "profile" && (
+        <SettingsPage
           database={database}
           settings={settings}
-          onAddTask={addTask}
+          tasks={tasks}
           onAddTasks={addTasks}
-          onUpdateTask={updateTask}
-          onDeleteTask={deleteTask}
-          onCopyDay={copyDay}
-          onReplaceTasks={replaceTasks}
-          onMergeTasks={mergeTasks}
+          onUpdateSettings={handleSaveSettings}
+          onReplaceDatabase={replaceDatabase}
           onSaveTemplate={saveTemplate}
           onDeleteTemplate={deleteTemplate}
           onGenerateRecurring={generateRecurringTasks}
-          onReplaceDatabase={replaceDatabase}
-          onUpdateSettings={handleSaveSettings}
           notify={notify}
         />
       )}
-      {page === "settings" && <SettingsPage settings={settings} onSave={handleSaveSettings} notify={notify} />}
       <EvidenceDialog
         task={evidenceTarget}
         evidence={evidences.find((item) => item.taskId === evidenceTarget?.id || item.id === evidenceTarget?.evidenceId)}

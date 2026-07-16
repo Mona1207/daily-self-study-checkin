@@ -3,6 +3,7 @@ import {
   AppSettings,
   CURRENT_DATA_VERSION,
   DailyReflection,
+  DEFAULT_CATEGORIES,
   EvidenceRequirement,
   Priority,
   RecurringTaskTemplate,
@@ -39,7 +40,7 @@ const subject = (value: unknown): Subject => {
 };
 
 const status = (value: unknown, completed: boolean, date: string): TaskStatus => {
-  if (value === "pending" || value === "in_progress" || value === "completed" || value === "overdue" || value === "postponed" || value === "abandoned") {
+  if (value === "pending" || value === "in_progress" || value === "completed" || value === "overdue" || value === "postponed" || value === "cancelled" || value === "abandoned") {
     return value;
   }
   if (completed) return "completed";
@@ -53,6 +54,7 @@ const evidenceRequirement = (value: unknown): EvidenceRequirement => {
 
 export const defaultSettings = (): AppSettings => ({
   studentName: "张小明",
+  userName: "我",
   adminPasswordHash: hashPassword("123456"),
   dailyTarget: 4,
   animationsEnabled: true,
@@ -62,6 +64,7 @@ export const defaultSettings = (): AppSettings => ({
   requireAdminPasswordEverySession: true,
   onboarded: false,
   publishedTasksVersion: undefined,
+  categories: DEFAULT_CATEGORIES,
 });
 
 export const normalizeSettings = (raw: unknown): AppSettings => {
@@ -71,6 +74,7 @@ export const normalizeSettings = (raw: unknown): AppSettings => {
   return {
     ...base,
     studentName: asString(raw.studentName, base.studentName),
+    userName: asString(raw.userName, asString(raw.studentName, base.userName)),
     adminPasswordHash: asString(raw.adminPasswordHash, legacyPassword ? hashPassword(legacyPassword) : base.adminPasswordHash),
     dailyTarget: asNumber(raw.dailyTarget ?? raw.dailyGoal, base.dailyTarget) ?? base.dailyTarget,
     animationsEnabled: asBoolean(raw.animationsEnabled ?? raw.enableAnimations, base.animationsEnabled),
@@ -81,6 +85,7 @@ export const normalizeSettings = (raw: unknown): AppSettings => {
     lastBackupAt: asString(raw.lastBackupAt, undefined as unknown as string) || undefined,
     onboarded: asBoolean(raw.onboarded, base.onboarded),
     publishedTasksVersion: asString(raw.publishedTasksVersion, undefined as unknown as string) || undefined,
+    categories: Array.isArray(raw.categories) ? raw.categories as AppSettings["categories"] : base.categories,
   };
 };
 
@@ -92,9 +97,13 @@ export const normalizeTask = (raw: unknown): StudyTask => {
   const normalized: StudyTask = {
     id: asString(item.id, crypto.randomUUID()),
     date,
+    startTime: asString(item.startTime, "") || undefined,
+    dueTime: asString(item.dueTime, "") || undefined,
     originalScheduledDate: asString(item.originalScheduledDate, "") || undefined,
+    originalDate: asString(item.originalDate ?? item.originalScheduledDate, "") || undefined,
     title: asString(item.title, "未命名任务").trim() || "未命名任务",
     subject: subject(item.subject),
+    categoryId: asString(item.categoryId, "") || undefined,
     description: asString(item.description, "") || undefined,
     estimatedMinutes: asNumber(item.estimatedMinutes),
     actualSeconds: Math.max(0, asNumber(item.actualSeconds, 0) ?? 0),

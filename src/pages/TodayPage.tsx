@@ -1,18 +1,19 @@
-import { useMemo, useState } from "react";
-import { CalendarCheck2, CheckCircle2, ListTodo, PartyPopper, Sparkles } from "lucide-react";
-import { AppSettings, DailyReflection, StudySession, StudyTask, TaskEvidence, TaskTimerState } from "../types/task";
+import { FormEvent, useMemo, useState } from "react";
+import { CalendarDays, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { AppSettings, DailyReflection, EvidenceRequirement, Priority, StudySession, StudyTask, TaskEvidence, TaskTimerState, SUBJECTS, Subject } from "../types/task";
 import { Button } from "../components/common/Button";
 import { Card } from "../components/common/Card";
 import { Modal } from "../components/common/Modal";
 import { ProgressBar } from "../components/common/ProgressBar";
-import { TaskCard } from "../components/tasks/TaskCard";
-import { TaskFilter, TaskFilters } from "../components/tasks/TaskFilters";
 import { ReflectionPanel } from "../components/reflection/ReflectionPanel";
-import { formatChineseDate, getGreeting, getTodayString, getWeekdayName } from "../utils/date";
+import { TaskCard } from "../components/tasks/TaskCard";
+import { addDays, formatChineseDate, getGreeting, getTodayString, getWeekdayName, toDateString } from "../utils/date";
 import { getCompletionPercent, summarizeDay } from "../utils/statistics";
 import { getNextTaskRecommendation } from "../utils/recommendations";
-import { formatDuration } from "../utils/timer";
 import { sortTasks } from "../utils/taskSort";
+
+type NewTaskInput = Omit<StudyTask, "id" | "createdAt" | "updatedAt" | "status" | "completed" | "actualSeconds"> &
+  Partial<Pick<StudyTask, "status" | "actualSeconds" | "evidenceRequirement">>;
 
 interface TodayPageProps {
   tasks: StudyTask[];
@@ -21,6 +22,7 @@ interface TodayPageProps {
   sessions: StudySession[];
   evidences: TaskEvidence[];
   reflections: DailyReflection[];
+  onAddTask: (task: NewTaskInput) => void;
   onComplete: (task: StudyTask) => void;
   onUndo: (task: StudyTask) => void;
   onStart: (task: StudyTask) => void;
@@ -31,18 +33,18 @@ interface TodayPageProps {
   onAbandon: (task: StudyTask) => void;
   onRestore: (task: StudyTask) => void;
   onSaveReflection: (reflection: DailyReflection) => void;
-  onGoAdmin: () => void;
+  onGoCalendar: () => void;
   notify: (type: "success" | "error" | "info", message: string) => void;
 }
 
-const getEncouragement = (percent: number, total: number, overdue: number): string => {
-  if (overdue > 0) return "有任务延期也没关系，重新安排后继续前进。";
-  if (total === 0) return "今天也要向目标前进一步！";
-  if (percent === 100) return "今天的计划全部完成，做得很棒！";
-  if (percent >= 60) return "已经完成一半了，继续保持！";
-  if (percent > 0) return "开了一个好头，继续加油！";
-  return "今天也要向目标前进一步！";
-};
+const inputClass =
+  "min-h-11 w-full rounded-[10px] border border-[#E9EBEF] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#4F6EF7] focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950";
+
+const priorityOptions: Array<{ value: Priority; label: string }> = [
+  { value: "low", label: "低" },
+  { value: "medium", label: "中" },
+  { value: "high", label: "高" },
+];
 
 export function TodayPage({
   tasks,
@@ -51,6 +53,7 @@ export function TodayPage({
   sessions,
   evidences,
   reflections,
+  onAddTask,
   onComplete,
   onUndo,
   onStart,
@@ -61,117 +64,87 @@ export function TodayPage({
   onAbandon,
   onRestore,
   onSaveReflection,
-  onGoAdmin,
+  onGoCalendar,
   notify,
 }: TodayPageProps) {
-  const [filter, setFilter] = useState<TaskFilter>("all");
-  const [postponeTarget, setPostponeTarget] = useState<StudyTask | null>(null);
-  const [postponeDate, setPostponeDate] = useState("");
-  const [postponeReason, setPostponeReason] = useState("");
   const today = getTodayString();
   const todayDate = new Date();
-  const visibleTodayTasks = tasks.filter((task) => task.date === today && task.status !== "postponed");
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [completedOpen, setCompletedOpen] = useState(false);
+  const [draft, setDraft] = useState({
+    title: "",
+    date: today,
+    startTime: "",
+    dueTime: "",
+    subject: "工作" as Subject,
+    description: "",
+    estimatedMinutes: "",
+    priority: "medium" as Priority,
+    evidenceRequirement: "none" as EvidenceRequirement,
+  });
+
+  const todayTasks = tasks.filter((task) => task.date === today && task.status !== "postponed" && task.status !== "cancelled" && task.status !== "abandoned");
   const overdueTasks = tasks.filter((task) => task.date < today && (task.status === "overdue" || task.status === "pending" || task.status === "in_progress"));
+  const allVisible = [...overdueTasks, ...todayTasks.filter((task) => !overdueTasks.some((item) => item.id === task.id))];
   const summary = summarizeDay(tasks, today);
   const percent = getCompletionPercent(summary);
-  const recommendation = getNextTaskRecommendation(tasks, today, timerState);
-  const displayTasks = useMemo(() => {
-    const base = [...overdueTasks, ...visibleTodayTasks.filter((task) => !overdueTasks.some((overdue) => overdue.id === task.id))];
-    const filtered = base.filter((task) => {
-      if (filter === "pending") return task.status !== "completed";
-      if (filter === "done") return task.status === "completed";
-      return true;
-    });
-    return sortTasks(filtered);
-  }, [filter, overdueTasks, visibleTodayTasks]);
+  const recommendation = getNextTaskRecommendation(allVisible, today, timerState);
 
-  const openPostpone = (task: StudyTask) => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    setPostponeDate(tomorrow.toISOString().slice(0, 10));
-    setPostponeReason("");
-    setPostponeTarget(task);
+  const grouped = useMemo(() => {
+    const running = sortTasks(allVisible.filter((task) => task.status === "in_progress"));
+    const overdue = sortTasks(allVisible.filter((task) => task.status === "overdue" || task.date < today));
+    const pending = sortTasks(allVisible.filter((task) => task.status === "pending" && task.date >= today));
+    const completed = sortTasks(allVisible.filter((task) => task.status === "completed"));
+    return { running, overdue, pending, completed };
+  }, [allVisible, today]);
+
+  const resetDraft = () => {
+    setDraft({
+      title: "",
+      date: today,
+      startTime: "",
+      dueTime: "",
+      subject: "工作",
+      description: "",
+      estimatedMinutes: "",
+      priority: "medium",
+      evidenceRequirement: "none",
+    });
+    setAdvancedOpen(false);
   };
 
-  if (tasks.length === 0) {
+  const submitQuickTask = (event: FormEvent) => {
+    event.preventDefault();
+    if (!draft.title.trim()) return notify("error", "先写下任务名称。");
+    onAddTask({
+      title: draft.title.trim(),
+      date: draft.date,
+      startTime: draft.startTime || undefined,
+      dueTime: draft.dueTime || undefined,
+      subject: draft.subject,
+      description: draft.description.trim() || undefined,
+      estimatedMinutes: draft.estimatedMinutes ? Number(draft.estimatedMinutes) : undefined,
+      priority: draft.priority,
+      evidenceRequirement: draft.evidenceRequirement,
+    });
+    notify("success", "任务已添加。");
+    setQuickOpen(false);
+    resetDraft();
+  };
+
+  const renderGroup = (title: string, list: StudyTask[], collapsed = false) => {
+    if (!list.length) return null;
+    const open = collapsed ? completedOpen : true;
     return (
-      <Card className="mx-auto mt-12 max-w-2xl text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-indigo-50 text-indigo-500 dark:bg-indigo-500/15">
-          <ListTodo size={32} />
-        </div>
-        <h1 className="mt-5 text-2xl font-black">开始今天的学习计划吧</h1>
-        <p className="mt-3 text-slate-500 dark:text-slate-300">暂时还没有任务，请去自己添加任务或导入日历文件。</p>
-        <Button className="mt-6" onClick={onGoAdmin}>
-          添加第一个任务
-        </Button>
-      </Card>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <section className="rounded-3xl bg-gradient-to-br from-sky-100 via-indigo-50 to-white p-5 shadow-soft sm:p-7 dark:from-sky-950 dark:via-indigo-950 dark:to-slate-900">
-        <div>
-          <div>
-            <div className="text-sm font-semibold text-indigo-600 dark:text-indigo-200">
-              {formatChineseDate(todayDate)} · {getWeekdayName(todayDate)}
-            </div>
-            <h1 className="mt-2 text-3xl font-black tracking-normal sm:text-4xl">
-              {settings.studentName}，{getGreeting()}！
-            </h1>
-            <p className="mt-3 text-lg text-slate-600 dark:text-slate-300">{getEncouragement(percent, summary.total, overdueTasks.length)}</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid grid-cols-2 gap-4">
-        <Card><CalendarCheck2 className="text-sky-500" size={28} /><p className="mt-3 text-sm text-slate-500">今日任务数</p><p className="text-3xl font-black">{summary.total}</p></Card>
-        <Card><CheckCircle2 className="text-emerald-500" size={28} /><p className="mt-3 text-sm text-slate-500">已完成</p><p className="text-3xl font-black text-emerald-600">{summary.completed}</p></Card>
-      </section>
-
-      <Card className={summary.total > 0 && percent === 100 && settings.animationsEnabled ? "animate-pop" : ""}>
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-xl font-black">今日完成进度</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              今日已完成 {summary.completed}/{summary.total} 项 · 计划 {summary.plannedMinutes} 分钟 · 实际 {formatDuration(summary.actualSeconds)}
-            </p>
-          </div>
-          {summary.total > 0 && percent === 100 && (
-            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200">
-              <PartyPopper size={18} />
-              全部完成
-            </span>
-          )}
-        </div>
-        <ProgressBar percent={percent} />
-      </Card>
-
-      <Card>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-300">接下来建议完成</p>
-            <h2 className="mt-1 text-xl font-black">{recommendation.task?.title ?? "当前没有待推荐任务"}</h2>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{recommendation.reason}</p>
-          </div>
-          {recommendation.task && (
-            <Button icon={<Sparkles size={18} />} onClick={() => onStart(recommendation.task!)}>
-              开始学习
-            </Button>
-          )}
-        </div>
-      </Card>
-
-      <section>
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-xl font-black">今日任务列表</h2>
-          <TaskFilters value={filter} onChange={setFilter} />
-        </div>
-        <div className="space-y-4">
-          {displayTasks.length === 0 ? (
-            <Card className="text-center text-slate-500 dark:text-slate-300">当前筛选下没有任务。</Card>
-          ) : (
-            displayTasks.map((task) => (
+      <section className="space-y-2">
+        <button className="flex w-full items-center justify-between py-1 text-left" onClick={() => collapsed && setCompletedOpen((value) => !value)}>
+          <h2 className="text-[15px] font-semibold text-[#1F2329] dark:text-slate-100">{title} {collapsed ? list.length : ""}</h2>
+          {collapsed ? (open ? <ChevronUp size={18} /> : <ChevronDown size={18} />) : null}
+        </button>
+        {open && (
+          <div className="space-y-2">
+            {list.map((task) => (
               <TaskCard
                 key={task.id}
                 task={task}
@@ -185,47 +158,106 @@ export function TodayPage({
                 onPause={onPause}
                 onResetTimer={onResetTimer}
                 onEvidence={onEvidence}
-                onPostpone={openPostpone}
+                onPostpone={(item) => onPostpone(item, toDateString(addDays(new Date(), 1)))}
                 onAbandon={onAbandon}
                 onRestore={onRestore}
               />
-            ))
-          )}
-        </div>
-      </section>
-
-      <ReflectionPanel reflections={reflections} emphasized={percent === 100 && summary.total > 0} onSave={onSaveReflection} notify={notify} />
-
-      <Modal title="延期任务" open={Boolean(postponeTarget)} onClose={() => setPostponeTarget(null)}>
-        <div className="space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-300">将“{postponeTarget?.title}”延期到新的日期。延期到过去日期会被拒绝。</p>
-          <input className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950" type="date" value={postponeDate} onChange={(event) => setPostponeDate(event.target.value)} />
-          <textarea className="min-h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950" value={postponeReason} onChange={(event) => setPostponeReason(event.target.value)} placeholder="延期原因，可选" />
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button variant="secondary" onClick={() => setPostponeTarget(null)}>取消</Button>
-            <Button
-              onClick={() => {
-                if (!postponeTarget) return;
-                if (postponeDate < today) return notify("error", "不能延期到过去日期。");
-                onPostpone(postponeTarget, postponeDate, postponeReason, false);
-                setPostponeTarget(null);
-              }}
-            >
-              确认延期
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                if (!postponeTarget) return;
-                if (postponeDate < today) return notify("error", "不能复制到过去日期。");
-                onPostpone(postponeTarget, postponeDate, postponeReason, true);
-                setPostponeTarget(null);
-              }}
-            >
-              复制到新日期
-            </Button>
+            ))}
           </div>
+        )}
+      </section>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-[22px] font-semibold">{todayDate.getMonth() + 1}月{todayDate.getDate()}日</div>
+          <div className="mt-1 text-sm text-[#6B7280]">{getWeekdayName(todayDate)}</div>
+          <p className="mt-3 text-sm text-[#6B7280]">
+            {summary.total === 0 ? `${getGreeting()}，今天还没有安排` : summary.pending === 0 ? "今天的安排已经全部完成" : `${getGreeting()}，今天有${summary.total}件事要完成`}
+          </p>
         </div>
+        <div className="flex gap-2">
+          <button className="flex h-11 w-11 items-center justify-center rounded-[10px] bg-white text-[#4F6EF7] shadow-sm dark:bg-slate-900" onClick={onGoCalendar} aria-label="打开日历">
+            <CalendarDays size={20} />
+          </button>
+          <button className="flex h-11 w-11 items-center justify-center rounded-[10px] bg-[#4F6EF7] text-white shadow-sm" onClick={() => setQuickOpen(true)} aria-label="添加任务">
+            <Plus size={22} />
+          </button>
+        </div>
+      </header>
+
+      <Card>
+        <h2 className="text-base font-semibold">今日进度</h2>
+        <div className="mt-3 flex items-end justify-between gap-4">
+          <div>
+            <div className="text-[28px] font-semibold">{summary.completed} / {summary.total}</div>
+            <div className="mt-1 text-sm text-[#6B7280]">已完成，还有 {Math.max(0, summary.pending)} 项</div>
+          </div>
+          <div className="text-lg font-semibold text-[#4F6EF7]">{percent}%</div>
+        </div>
+        <div className="mt-4">
+          <ProgressBar percent={percent} label="" />
+        </div>
+      </Card>
+
+      {recommendation.task ? (
+        <Card>
+          <p className="text-sm font-semibold text-[#4F6EF7]">接下来</p>
+          <div className="mt-2 text-base font-semibold">{recommendation.task.title}</div>
+          <div className="mt-1 text-sm text-[#6B7280]">
+            {recommendation.task.subject} {recommendation.task.estimatedMinutes ? `· 预计${recommendation.task.estimatedMinutes}分钟` : ""}
+          </div>
+          <p className="mt-3 text-sm text-[#6B7280]">{recommendation.reason}</p>
+          <Button className="mt-4" onClick={() => onStart(recommendation.task!)}>开始</Button>
+        </Card>
+      ) : (
+        <Card>
+          <div className="text-base font-semibold">今天还没有安排任务</div>
+          <p className="mt-1 text-sm text-[#6B7280]">添加一件今天要完成的事吧</p>
+          <Button className="mt-4" icon={<Plus size={18} />} onClick={() => setQuickOpen(true)}>添加任务</Button>
+        </Card>
+      )}
+
+      <div className="space-y-5">
+        {renderGroup("进行中", grouped.running)}
+        {renderGroup("已逾期", grouped.overdue)}
+        {renderGroup("待完成", grouped.pending)}
+        {renderGroup("已完成", grouped.completed, true)}
+      </div>
+
+      <ReflectionPanel reflections={reflections} onSave={onSaveReflection} notify={notify} />
+
+      <button className="fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[#4F6EF7] text-white shadow-lg sm:hidden" onClick={() => setQuickOpen(true)} aria-label="快速添加">
+        <Plus size={26} />
+      </button>
+
+      <Modal title="添加任务" open={quickOpen} onClose={() => setQuickOpen(false)}>
+        <form className="space-y-4" onSubmit={submitQuickTask}>
+          <label className="text-sm font-semibold">
+            任务名称
+            <input autoFocus className={`${inputClass} mt-1`} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="写下要完成的事" />
+          </label>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="text-sm font-semibold">日期<input className={`${inputClass} mt-1`} type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} /></label>
+            <label className="text-sm font-semibold">时间<input className={`${inputClass} mt-1`} type="time" value={draft.startTime} onChange={(event) => setDraft({ ...draft, startTime: event.target.value })} /></label>
+            <label className="text-sm font-semibold">分类<select className={`${inputClass} mt-1`} value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value as Subject })}>{SUBJECTS.map((subject) => <option key={subject} value={subject}>{subject}</option>)}</select></label>
+          </div>
+          <button type="button" className="text-sm font-semibold text-[#4F6EF7]" onClick={() => setAdvancedOpen((value) => !value)}>
+            {advancedOpen ? "收起更多设置" : "更多设置"}
+          </button>
+          {advancedOpen && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-sm font-semibold sm:col-span-2">任务说明<textarea className={`${inputClass} mt-1 min-h-24`} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label>
+              <label className="text-sm font-semibold">预计时间<input className={`${inputClass} mt-1`} type="number" min="0" value={draft.estimatedMinutes} onChange={(event) => setDraft({ ...draft, estimatedMinutes: event.target.value })} /></label>
+              <label className="text-sm font-semibold">优先级<select className={`${inputClass} mt-1`} value={draft.priority} onChange={(event) => setDraft({ ...draft, priority: event.target.value as Priority })}>{priorityOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+              <label className="text-sm font-semibold sm:col-span-2">完成记录<select className={`${inputClass} mt-1`} value={draft.evidenceRequirement} onChange={(event) => setDraft({ ...draft, evidenceRequirement: event.target.value as EvidenceRequirement })}><option value="none">不填写</option><option value="text">文字</option><option value="image">图片</option><option value="text_and_image">文字和图片</option></select></label>
+            </div>
+          )}
+          <Button className="w-full">保存任务</Button>
+        </form>
       </Modal>
     </div>
   );

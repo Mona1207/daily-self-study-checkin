@@ -52,7 +52,7 @@ export function ReflectionPanel({ date = getTodayString(), reflections = [], emp
   const submit = (event: FormEvent) => {
     event.preventDefault();
     onSave({ ...draft, date: selectedDate, updatedAt: new Date().toISOString() });
-    notify("success", "今日心情和小记已保存。");
+    notify("success", "每日回顾已保存。");
   };
 
   return (
@@ -65,9 +65,9 @@ export function ReflectionPanel({ date = getTodayString(), reflections = [], emp
                 <BookMarked size={22} />
               </div>
               <div>
-                <h2 className="text-xl font-black">今日总结</h2>
+                <h2 className="text-xl font-black">记录今天</h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {todayReflection ? `${MOOD_LABEL[todayReflection.mood]} · ${todayReflection.notes || "已记录小记"}` : "点进去填写今日心情和小记"}
+                  {todayReflection ? `${MOOD_LABEL[todayReflection.mood]} · ${todayReflection.notes || "已记录每日回顾"}` : "点进去填写今日状态和小记"}
                 </p>
               </div>
             </div>
@@ -76,7 +76,7 @@ export function ReflectionPanel({ date = getTodayString(), reflections = [], emp
         </Card>
       </button>
 
-      <Modal title="今日总结" open={open} onClose={() => setOpen(false)}>
+      <Modal title="每日回顾" open={open} onClose={() => setOpen(false)}>
         <form className="space-y-5" onSubmit={submit}>
           <label className="text-sm font-semibold">
             查看日期
@@ -88,7 +88,7 @@ export function ReflectionPanel({ date = getTodayString(), reflections = [], emp
             </div>
           )}
           <label className="text-sm font-semibold">
-            今日心情
+            今天整体状态
             <select className={`${inputClass} mt-1`} value={draft.mood} onChange={(event) => setDraft({ ...draft, mood: event.target.value as DailyMood })}>
               {Object.entries(MOOD_LABEL).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -98,12 +98,12 @@ export function ReflectionPanel({ date = getTodayString(), reflections = [], emp
             </select>
           </label>
           <label className="text-sm font-semibold">
-            小记
+            其他记录
             <textarea
               className={`${inputClass} mt-1 min-h-36`}
               value={draft.notes ?? ""}
               onChange={(event) => setDraft({ ...draft, notes: event.target.value })}
-              placeholder="今天发生了什么？完成得怎么样？有什么想记下来的？"
+              placeholder="今天完成得怎么样？有什么想记下来的？"
             />
           </label>
           <Button icon={<Save size={18} />}>保存</Button>

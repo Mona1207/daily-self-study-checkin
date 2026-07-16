@@ -254,7 +254,7 @@ export const exportTasks = (): ExportData => {
 const openImageDb = (): Promise<IDBDatabase> =>
   new Promise((resolve, reject) => {
     if (!("indexedDB" in window)) {
-      reject(new Error("当前浏览器不支持 IndexedDB，无法保存图片证明。"));
+        reject(new Error("当前浏览器不支持 IndexedDB，无法保存图片记录。"));
       return;
     }
     const request = indexedDB.open(IMAGE_DB_NAME, 1);

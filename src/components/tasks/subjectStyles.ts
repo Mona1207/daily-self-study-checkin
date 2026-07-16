@@ -1,20 +1,34 @@
 import {
   Atom,
   BookOpen,
+  Bookmark,
+  Briefcase,
   Calculator,
   Dumbbell,
   FlaskConical,
   Globe2,
+  HeartPulse,
+  Home,
   Landmark,
   Languages,
   LucideIcon,
   Microscope,
   Scale,
+  ShoppingBag,
   Sparkles,
+  User,
 } from "lucide-react";
 import { Subject } from "../../types/task";
 
 export const subjectStyles: Record<Subject, { icon: LucideIcon; className: string }> = {
+  工作: { icon: Briefcase, className: "bg-blue-50 text-blue-700 ring-blue-100 dark:bg-blue-500/15 dark:text-blue-200" },
+  学习: { icon: BookOpen, className: "bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-200" },
+  生活: { icon: Home, className: "bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-200" },
+  运动: { icon: Dumbbell, className: "bg-orange-50 text-orange-700 ring-orange-100 dark:bg-orange-500/15 dark:text-orange-200" },
+  阅读: { icon: Bookmark, className: "bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-500/15 dark:text-violet-200" },
+  健康: { icon: HeartPulse, className: "bg-teal-50 text-teal-700 ring-teal-100 dark:bg-teal-500/15 dark:text-teal-200" },
+  购物: { icon: ShoppingBag, className: "bg-rose-50 text-rose-600 ring-rose-100 dark:bg-rose-500/15 dark:text-rose-200" },
+  个人: { icon: User, className: "bg-indigo-50 text-indigo-600 ring-indigo-100 dark:bg-indigo-500/15 dark:text-indigo-200" },
   语文: { icon: BookOpen, className: "bg-rose-50 text-rose-600 ring-rose-100 dark:bg-rose-500/15 dark:text-rose-200" },
   数学: { icon: Calculator, className: "bg-sky-50 text-sky-600 ring-sky-100 dark:bg-sky-500/15 dark:text-sky-200" },
   英语: { icon: Languages, className: "bg-indigo-50 text-indigo-600 ring-indigo-100 dark:bg-indigo-500/15 dark:text-indigo-200" },
@@ -24,6 +38,5 @@ export const subjectStyles: Record<Subject, { icon: LucideIcon; className: strin
   历史: { icon: Landmark, className: "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/15 dark:text-amber-200" },
   生物: { icon: Microscope, className: "bg-teal-50 text-teal-700 ring-teal-100 dark:bg-teal-500/15 dark:text-teal-200" },
   政治: { icon: Scale, className: "bg-blue-50 text-blue-700 ring-blue-100 dark:bg-blue-500/15 dark:text-blue-200" },
-  运动: { icon: Dumbbell, className: "bg-lime-50 text-lime-700 ring-lime-100 dark:bg-lime-500/15 dark:text-lime-200" },
   其他: { icon: Sparkles, className: "bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-200" },
 };

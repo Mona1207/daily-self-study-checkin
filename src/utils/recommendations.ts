@@ -9,7 +9,7 @@ export interface TaskRecommendation {
 export const getNextTaskRecommendation = (tasks: StudyTask[], today: string, timer?: TaskTimerState): TaskRecommendation => {
   const active = tasks.filter((task) => task.status !== "completed" && task.status !== "abandoned" && task.status !== "postponed");
   const overdue = active.filter((task) => task.date < today || task.status === "overdue");
-  if (overdue.length) return { task: overdue.sort((a, b) => a.date.localeCompare(b.date))[0], reason: "这是一个逾期任务，建议优先补做" };
+  if (overdue.length) return { task: overdue.sort((a, b) => a.date.localeCompare(b.date))[0], reason: "这是一个逾期任务，建议优先处理" };
 
   const running = active.find((task) => timer?.taskId === task.id || getDisplayedSeconds(task, timer) > 0);
   if (running) return { task: running, reason: "你已经开始了这个任务" };
@@ -17,7 +17,7 @@ export const getNextTaskRecommendation = (tasks: StudyTask[], today: string, tim
   const todayPending = active.filter((task) => task.date === today);
   if (!todayPending.length) {
     const todayTotal = tasks.filter((task) => task.date === today).length;
-    return { reason: todayTotal ? "今天的任务已经全部完成，可以填写学习总结或提前查看明天的计划。" : "今天暂时没有学习任务。" };
+    return { reason: todayTotal ? "今天的任务已经全部完成，可以记录今天或提前查看明天的计划。" : "今天还没有安排任务。" };
   }
 
   const high = todayPending.find((task) => task.priority === "high");

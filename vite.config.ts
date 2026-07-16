@@ -10,11 +10,11 @@ export default defineConfig({
       registerType: "prompt",
       includeAssets: ["pwa-192.png", "pwa-512.png", "pwa-maskable.png"],
       manifest: {
-        name: "今日任务",
-        short_name: "今日任务",
-        description: "给中学生使用的今日任务网站",
-        theme_color: "#4f46e5",
-        background_color: "#f8fafc",
+        name: "今日清单",
+        short_name: "今日清单",
+        description: "把每天要做的事，清楚地安排好",
+        theme_color: "#4F6EF7",
+        background_color: "#F6F7F9",
         display: "standalone",
         start_url: ".",
         icons: [

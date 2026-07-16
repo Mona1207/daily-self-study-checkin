@@ -52,8 +52,8 @@ export const buildTemplateData = (): ExportData => {
       {
         id: "template-task-1",
         date: today,
-        title: "示例：完成数学练习",
-        subject: "数学",
+        title: "示例：整理项目资料",
+        subject: "工作",
         description: "这里填写任务说明",
         estimatedMinutes: 30,
         actualSeconds: 0,
@@ -67,7 +67,8 @@ export const buildTemplateData = (): ExportData => {
       },
     ],
     settings: {
-      studentName: "张小明",
+      studentName: "我",
+      userName: "我",
       dailyTarget: 4,
       animationsEnabled: true,
       showEstimatedTime: true,

@@ -1,8 +1,9 @@
+export type TaskPriority = "none" | "low" | "medium" | "high";
 export type Priority = "low" | "medium" | "high";
 
-export type Subject = "语文" | "数学" | "英语" | "物理" | "化学" | "地理" | "历史" | "生物" | "政治" | "运动" | "其他";
+export type Subject = "工作" | "学习" | "生活" | "运动" | "阅读" | "健康" | "购物" | "个人" | "其他" | "语文" | "数学" | "英语" | "物理" | "化学" | "地理" | "历史" | "生物" | "政治";
 
-export type TaskStatus = "pending" | "in_progress" | "completed" | "overdue" | "postponed" | "abandoned";
+export type TaskStatus = "pending" | "in_progress" | "completed" | "overdue" | "postponed" | "cancelled" | "abandoned";
 
 export type EvidenceRequirement = "none" | "text" | "number" | "image" | "text_and_image";
 
@@ -20,9 +21,13 @@ export interface PostponeRecord {
 export interface StudyTask {
   id: string;
   date: string;
+  startTime?: string;
+  dueTime?: string;
   originalScheduledDate?: string;
+  originalDate?: string;
   title: string;
   subject: Subject;
+  categoryId?: string;
   description?: string;
   estimatedMinutes?: number;
   actualSeconds?: number;
@@ -39,6 +44,27 @@ export interface StudyTask {
    * Legacy compatibility. New code should read/write status.
    */
   completed?: boolean;
+}
+
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface DailyTask extends StudyTask {
+  subtasks?: Subtask[];
+  recurrenceId?: string;
+  reminderIds?: number[];
+}
+
+export interface TaskCategory {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+  order: number;
+  createdAt: string;
 }
 
 export interface RecurrenceRule {
@@ -116,6 +142,7 @@ export interface DailyReflection {
 
 export interface AppSettings {
   studentName: string;
+  userName?: string;
   adminPasswordHash: string;
   dailyTarget: number;
   animationsEnabled: boolean;
@@ -126,6 +153,7 @@ export interface AppSettings {
   lastBackupAt?: string;
   onboarded: boolean;
   publishedTasksVersion?: string;
+  categories?: TaskCategory[];
   /**
    * Legacy compatibility. These aliases are kept so older local JSON can still hydrate.
    */
@@ -164,7 +192,16 @@ export interface ExportData {
   evidences?: TaskEvidence[];
 }
 
-export const SUBJECTS: Subject[] = ["语文", "数学", "英语", "物理", "化学", "地理", "历史", "生物", "政治", "运动", "其他"];
+export const SUBJECTS: Subject[] = ["工作", "学习", "生活", "运动", "阅读", "健康", "购物", "个人", "其他"];
+
+export const DEFAULT_CATEGORIES: TaskCategory[] = SUBJECTS.map((name, index) => ({
+  id: `category-${name}`,
+  name,
+  icon: ["briefcase", "book", "home", "activity", "bookmark", "heart", "shopping-bag", "user", "circle"][index],
+  color: ["#E8EEFF", "#EDF7F1", "#F2F4F7", "#FFF2DF", "#F0ECFF", "#E8F6F4", "#FFF0F0", "#EEF2F7", "#F4F4F5"][index],
+  order: index,
+  createdAt: "2026-07-16T00:00:00.000+08:00",
+}));
 
 export const PRIORITY_LABEL: Record<Priority, string> = {
   low: "低",
@@ -174,26 +211,27 @@ export const PRIORITY_LABEL: Record<Priority, string> = {
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
   pending: "待完成",
-  in_progress: "学习中",
+  in_progress: "进行中",
   completed: "已完成",
   overdue: "已逾期",
   postponed: "已延期",
-  abandoned: "已放弃",
+  cancelled: "已取消",
+  abandoned: "已取消",
 };
 
 export const EVIDENCE_LABEL: Record<EvidenceRequirement, string> = {
-  none: "无需证明",
-  text: "文字说明",
-  number: "完成数量",
-  image: "上传图片",
-  text_and_image: "文字加图片",
+  none: "不填写",
+  text: "添加文字",
+  number: "添加数量",
+  image: "添加图片",
+  text_and_image: "文字和图片",
 };
 
 export const MOOD_LABEL: Record<DailyMood, string> = {
   great: "很顺利",
-  good: "还不错",
-  normal: "一般",
-  difficult: "有点困难",
+  good: "正常",
+  normal: "有点忙",
+  difficult: "状态一般",
   adjust: "需要调整",
 };
 

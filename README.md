@@ -1,33 +1,19 @@
-# 今日任务
+# 今日清单
 
-给中学生使用的今日任务网站。项目支持查看今日任务、任务日历、任务统计、学习计时、完成证明、今日总结，也可以自己添加某一天的任务，或导入日历文件生成任务。
+把每天要做的事，清楚地安排好。
 
-重要说明：本项目没有后端，不同设备之间不会自动同步，需要通过导出和导入数据完成任务传递。
+今日清单是一款通用的每日任务 App，适合学生、上班族和普通个人使用。应用不需要注册登录，不使用后端，核心数据默认只保存在当前设备，并支持离线使用。
 
-## 功能清单
+## 功能
 
-- 今日任务：查看当天任务、逾期提醒、下一项推荐、学习计时、完成证明、完成打卡、撤销完成、延期、补做、放弃。
-- 今日总结：点进模块填写今日心情和小记，也可以切换日期查看和修改以前的小记。
-- 自己添加任务或导入日历文件：新增/编辑/删除任务、复制任务、批量添加任务、导入 `.ics` 日历文件或 CSV 文件、周期任务模板、生成未来任务、查看学习记录、查看完成证明、JSON 导入导出、完整 ZIP 备份、系统设置。
-- 周期任务：支持不重复、每天、工作日、每周指定星期、每月指定日期、自定义间隔天数，默认生成未来 30 天且自动去重。
-- 完成证明：支持无需证明、文字说明、完成数量、上传图片、文字加图片；图片保存到 IndexedDB，不写入 localStorage。
-- 学习计时：同一时间只允许一个任务计时，刷新后可按真实时间恢复显示，完成任务时自动停止计时。
-- 数据迁移：当前数据版本为 v2，导入旧版 JSON 会自动迁移；迁移前会保留最近 3 个本地快照。
-- PWA：支持离线缓存、安装到桌面或手机主屏幕，并在新版本可用时提示刷新。
+- 今天：查看当天任务、快速添加、完成打卡、撤销完成、延期、专注计时、完成记录、每日回顾。
+- 日历：按月查看过去和未来日期的任务，并可为选中日期添加任务。
+- 统计：查看今日完成率、本周完成任务和各分类专注时长。
+- 我的：分类管理、周期任务、提醒偏好、外观设置、JSON 导入导出、完整 ZIP 备份、版本更新。
+- 本地数据：结构化数据保存在 localStorage，完成记录图片保存在 IndexedDB。
+- App 能力：PWA、Android、iOS、离线缓存、Capacitor 同步、Android Debug APK。
 
-## 技术栈
-
-React、TypeScript、Vite、Tailwind CSS、Lucide React、date-fns、vite-plugin-pwa、localStorage、IndexedDB、browser-image-compression、JSZip。
-
-## 安装与启动
-
-```bash
-npm install
-npm run dev
-npm run build
-```
-
-如果本机使用 pnpm，也可以运行：
+## 开发
 
 ```bash
 pnpm install
@@ -35,62 +21,27 @@ pnpm run dev
 pnpm run build
 ```
 
-## 打包成手机 App
-
-本项目已接入 Capacitor，可以作为原生 Android / iOS App 打包。应用包名为 `com.mona1207.selfstudycheckin`，应用名为“今日任务”。
-
-同步网页资源到原生工程：
+## 同步到 App
 
 ```bash
-npm run app:sync
+pnpm run app:sync
 ```
 
-打开 Android 工程：
+## 生成 Android Debug APK
 
 ```bash
-npm run app:android
+pnpm run build
+pnpm exec cap sync android
+cd android
+./gradlew assembleDebug
 ```
 
-然后在 Android Studio 中连接手机，点击 Run，或构建 APK / AAB。
+生成文件：
 
-打开 iOS 工程：
-
-```bash
-npm run app:ios
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-然后在 Xcode 中选择 Team、连接 iPhone，点击 Run，或按 App Store 要求归档发布。
+## 数据提醒
 
-注意：Android 打包需要安装 Java Runtime 和 Android Studio；iOS 打包需要 macOS、完整 Xcode 和 Apple 开发者签名配置。
-
-## PWA 安装说明
-
-使用支持 PWA 的浏览器打开网站后，如果浏览器触发安装能力，侧栏会显示“安装到桌面”按钮。构建产物包含 manifest、service worker、192x192、512x512 和 maskable 图标。离线缓存只缓存静态资源，本地任务数据仍保存在当前浏览器。
-
-## 数据保存位置
-
-- localStorage：结构化应用数据、设置、任务索引、管理会话状态、迁移快照。
-- IndexedDB：完成证明图片。
-
-清除浏览器站点数据会删除任务、设置、计时记录、总结、证明和图片。操作前建议先导出 JSON 或完整 ZIP 备份包。
-
-## 自己添加任务或导入日历文件
-
-默认管理密码为 `123456`。进入“自己添加任务或导入日历文件”后可以在“系统设置”里修改密码。
-
-本地管理密码不能提供真正的安全保护，它只能防止普通误操作。忘记密码时，可以清除浏览器本地数据，或导入之前的备份覆盖当前数据。
-
-## 导入导出
-
-- JSON 导出：导出结构化数据，适合在不同设备之间传递任务和记录。
-- JSON 导入：支持旧版本数据，导入前会迁移并校验；格式错误不会覆盖现有数据。
-- 完整 ZIP 备份：包含 `backup/data.json` 和 `backup/evidence/` 下的图片证明文件。
-- 完整 ZIP 导入：恢复结构化数据，并尽量恢复图片证明。
-
-## 图片证明说明
-
-图片上传支持 JPG、JPEG、PNG、WEBP。单张原始图片建议不超过 10MB，上传后会自动压缩，尽量控制在 500KB 以内。每个任务最多上传 3 张图片。
-
-## 数据迁移机制
-
-应用启动和导入数据时会调用迁移函数，把旧任务的 `completed: true` 转换为 `status: "completed"`，为旧任务补充状态、证明、实际时长、更新时间等字段，并保留原任务 ID 和完成日期。迁移失败时不会清空旧数据。
+所有数据默认只保存在当前设备。卸载 App、清除浏览器站点数据或清除应用数据可能导致记录丢失，请定期在“我的 → 数据管理”中导出 JSON 或完整 ZIP 备份。
