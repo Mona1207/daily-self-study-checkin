@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
-import { Copy, Download, Edit3, FileArchive, FileJson, LockKeyhole, Plus, RefreshCw, Save, Trash2, Upload } from "lucide-react";
+import { CalendarPlus, Copy, Download, Edit3, FileArchive, FileJson, LockKeyhole, Plus, RefreshCw, Save, Trash2, Upload } from "lucide-react";
 import {
   AppDatabase,
   AppSettings,
@@ -21,6 +21,7 @@ import { hashPassword } from "../utils/migrations";
 import { recurrenceLabel } from "../utils/recurrence";
 import { clearSnapshots, getSnapshots, importDatabase, restoreSnapshot, validateExportData } from "../utils/storage";
 import { exportFullBackupZip, readFullBackupZip, restoreBackupImages } from "../utils/backup";
+import { parseCalendarFile } from "../utils/calendarImport";
 import { sortTasks } from "../utils/taskSort";
 
 type Notify = (type: "success" | "error" | "info", message: string) => void;
@@ -153,7 +154,7 @@ export function AdminPage({
 }: AdminPageProps) {
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem("self-study-admin-unlocked") === "1" && !settings.requireAdminPasswordEverySession);
   const [password, setPassword] = useState("");
-  const [tab, setTab] = useState<AdminTab>("dashboard");
+  const [tab, setTab] = useState<AdminTab>("tasks");
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [draft, setDraft] = useState<TaskDraft>(emptyDraft());
   const [batchRows, setBatchRows] = useState<TaskDraft[]>([emptyDraft()]);
@@ -167,6 +168,7 @@ export function AdminPage({
   const [settingsDraft, setSettingsDraft] = useState(settings);
   const fileRef = useRef<HTMLInputElement>(null);
   const zipRef = useRef<HTMLInputElement>(null);
+  const calendarRef = useRef<HTMLInputElement>(null);
 
   const selectedTasks = useMemo(() => sortTasks(database.tasks.filter((task) => task.date === selectedDate)), [selectedDate, database.tasks]);
   const completedCount = database.tasks.filter((task) => task.status === "completed").length;
@@ -178,7 +180,7 @@ export function AdminPage({
     if (hashPassword(password) === settings.adminPasswordHash) {
       setUnlocked(true);
       sessionStorage.setItem("self-study-admin-unlocked", "1");
-      notify("success", "已进入管理模式。");
+      notify("success", "已进入任务添加页面。");
     } else {
       notify("error", "管理密码不正确。");
     }
@@ -258,11 +260,26 @@ export function AdminPage({
     }
   };
 
+  const handleCalendarImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const importedTasks = await parseCalendarFile(file);
+      if (importedTasks.length === 0) return notify("info", "这个日历文件里没有识别到可导入的任务。");
+      const count = onAddTasks(importedTasks);
+      notify("success", `已从日历文件导入 ${count} 个任务。`);
+    } catch (error) {
+      notify("error", error instanceof Error ? error.message : "日历文件导入失败。");
+    } finally {
+      event.target.value = "";
+    }
+  };
+
   if (!unlocked) {
     return (
       <Card className="mx-auto mt-12 max-w-md">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-500 dark:bg-indigo-500/15"><LockKeyhole size={28} /></div>
-        <h1 className="mt-5 text-center text-2xl font-black">管理模式</h1>
+        <h1 className="mt-5 text-center text-2xl font-black">自己添加任务或导入日历文件</h1>
         <p className="mt-2 text-center text-sm text-slate-500 dark:text-slate-400">请输入本地管理密码。默认密码为 123456。本地密码只用于防误操作，不提供真正的安全保护。</p>
         <form className="mt-6 space-y-4" onSubmit={submitPassword}>
           <input className={inputClass} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="管理密码" />
@@ -276,8 +293,8 @@ export function AdminPage({
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-300">管理模式</p>
-          <h1 className="mt-1 text-3xl font-black">管理中心</h1>
+          <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-300">任务添加</p>
+          <h1 className="mt-1 text-3xl font-black">自己添加任务或导入日历文件</h1>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" icon={<RefreshCw size={18} />} onClick={() => notify("success", `已生成 ${onGenerateRecurring()} 个周期任务实例。`)}>生成周期任务</Button>
@@ -288,7 +305,7 @@ export function AdminPage({
       <div className="flex gap-2 overflow-x-auto pb-1">
         {[
           ["dashboard", "管理首页"],
-          ["tasks", "任务管理"],
+          ["tasks", "自己添加任务"],
           ["recurring", "周期任务"],
           ["records", "学习记录"],
           ["evidence", "完成证明"],
@@ -321,12 +338,22 @@ export function AdminPage({
               </form>
             </Card>
             <Card>
-              <h2 className="text-xl font-black">复制某一天任务</h2>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-semibold">来源日期<input className={`${inputClass} mt-1`} type="date" value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)} /></label>
-                <label className="text-sm font-semibold">目标日期<input className={`${inputClass} mt-1`} type="date" value={copyTo} onChange={(e) => setCopyTo(e.target.value)} /></label>
+              <h2 className="text-xl font-black">导入日历文件</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                支持导入 .ics 日历文件，每个日程会变成对应日期的任务；也支持 CSV：date,title,subject,priority。
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Button icon={<CalendarPlus size={18} />} onClick={() => calendarRef.current?.click()}>导入日历文件</Button>
+                <input ref={calendarRef} type="file" accept=".ics,text/calendar,.csv,text/csv" className="hidden" onChange={handleCalendarImport} />
               </div>
-              <Button className="mt-5" variant="secondary" icon={<Copy size={18} />} onClick={() => notify("success", `已复制 ${onCopyDay(copyFrom, copyTo)} 个任务。`)}>复制任务</Button>
+              <div className="mt-6 border-t border-slate-100 pt-5 dark:border-slate-800">
+                <h3 className="font-bold">复制某一天任务</h3>
+                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <label className="text-sm font-semibold">来源日期<input className={`${inputClass} mt-1`} type="date" value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)} /></label>
+                  <label className="text-sm font-semibold">目标日期<input className={`${inputClass} mt-1`} type="date" value={copyTo} onChange={(e) => setCopyTo(e.target.value)} /></label>
+                </div>
+                <Button className="mt-5" variant="secondary" icon={<Copy size={18} />} onClick={() => notify("success", `已复制 ${onCopyDay(copyFrom, copyTo)} 个任务。`)}>复制任务</Button>
+              </div>
             </Card>
           </section>
           <Card>

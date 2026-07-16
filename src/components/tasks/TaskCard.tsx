@@ -191,7 +191,7 @@ export function TaskCard({
                 重置计时
               </Button>
             )}
-            {admin && <span className="inline-flex items-center px-3 text-xs text-slate-400">管理操作在任务管理页进行</span>}
+            {admin && <span className="inline-flex items-center px-3 text-xs text-slate-400">可在添加任务页面调整</span>}
           </div>
         </div>
       )}

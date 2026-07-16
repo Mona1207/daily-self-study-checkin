@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: "prompt",
       includeAssets: ["pwa-192.png", "pwa-512.png", "pwa-maskable.png"],
       manifest: {
-        name: "每日自学打卡",
-        short_name: "自学打卡",
-        description: "给中学生使用的每日自学任务管理与打卡网站",
+        name: "今日任务",
+        short_name: "今日任务",
+        description: "给中学生使用的今日任务网站",
         theme_color: "#4f46e5",
         background_color: "#f8fafc",
         display: "standalone",

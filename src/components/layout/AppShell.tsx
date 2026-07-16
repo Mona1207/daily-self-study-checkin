@@ -14,9 +14,9 @@ interface AppShellProps {
 
 const navItems: Array<{ key: PageKey; label: string; icon: typeof ClipboardList }> = [
   { key: "today", label: "今日任务", icon: ClipboardList },
-  { key: "calendar", label: "学习日历", icon: CalendarDays },
-  { key: "statistics", label: "学习统计", icon: BarChart3 },
-  { key: "admin", label: "管理模式", icon: LockKeyhole },
+  { key: "calendar", label: "任务日历", icon: CalendarDays },
+  { key: "statistics", label: "任务统计", icon: BarChart3 },
+  { key: "admin", label: "添加任务", icon: LockKeyhole },
   { key: "settings", label: "个性设置", icon: Settings },
 ];
 
@@ -28,8 +28,8 @@ export function AppShell({ activePage, onNavigate, settings, children }: AppShel
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 text-lg font-black text-white">
             学
           </div>
-          <h1 className="mt-4 text-xl font-black">每日自学打卡</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">一步一步靠近目标</p>
+          <h1 className="mt-4 text-xl font-black">今日任务</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">每天安排清楚一点</p>
         </div>
         <nav className="space-y-2">
           {navItems.map((item) => {

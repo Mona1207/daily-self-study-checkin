@@ -54,7 +54,7 @@ export function StatisticsPage({ tasks, reflections = [] }: StatisticsPageProps)
     <div className="space-y-6">
       <div>
         <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-300">数据从本地任务记录自动计算</p>
-        <h1 className="mt-1 text-3xl font-black">学习统计</h1>
+        <h1 className="mt-1 text-3xl font-black">任务统计</h1>
       </div>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

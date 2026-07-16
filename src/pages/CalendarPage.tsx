@@ -37,7 +37,7 @@ export function CalendarPage({ tasks, settings, reflections = [] }: CalendarPage
     <div className="space-y-6">
       <div>
         <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-300">月历视图</p>
-        <h1 className="mt-1 text-3xl font-black">学习日历</h1>
+        <h1 className="mt-1 text-3xl font-black">任务日历</h1>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">

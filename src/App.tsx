@@ -203,9 +203,9 @@ export default function App() {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-sky-400 to-indigo-500 text-white">
               <BookOpenCheck size={34} />
             </div>
-            <h1 className="mt-6 text-3xl font-black sm:text-4xl">每日自学打卡</h1>
+            <h1 className="mt-6 text-3xl font-black sm:text-4xl">今日任务</h1>
             <p className="mx-auto mt-4 max-w-2xl text-slate-600 dark:text-slate-300">
-              这是一个给中学生使用的每日自学任务管理与打卡网站。所有数据只保存在当前浏览器，本项目没有后端，不同设备之间不会自动同步，需要通过导出和导入数据完成任务传递。
+              这是一个给中学生使用的今日任务网站。所有数据只保存在当前浏览器，本项目没有后端，不同设备之间不会自动同步，需要通过导出和导入数据完成任务传递。
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               <button onClick={() => finishOnboarding("demo")} className="rounded-3xl border border-indigo-100 bg-indigo-50 p-6 text-left transition hover:-translate-y-1 hover:shadow-soft dark:border-indigo-900 dark:bg-indigo-500/15">
@@ -216,7 +216,7 @@ export default function App() {
               <button onClick={() => finishOnboarding("blank")} className="rounded-3xl border border-slate-100 bg-white p-6 text-left transition hover:-translate-y-1 hover:shadow-soft dark:border-slate-800 dark:bg-slate-900">
                 <CheckCircle2 className="text-emerald-500" size={28} />
                 <h2 className="mt-4 text-xl font-black">从空白开始</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">不添加任何初始任务，进入后由管理模式自行安排。</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">不添加任何初始任务，进入后自己添加任务或导入日历文件。</p>
               </button>
             </div>
             <div className="mt-6"><Button variant="ghost" onClick={() => replaceDatabase({ ...database, settings: { ...settings, onboarded: true } })}>稍后再说，直接进入</Button></div>

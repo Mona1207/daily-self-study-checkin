@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, CalendarCheck2, CheckCircle2, Clock3, Flame, ListTodo, PartyPopper, Sparkles } from "lucide-react";
+import { CalendarCheck2, CheckCircle2, ListTodo, PartyPopper, Sparkles } from "lucide-react";
 import { AppSettings, DailyReflection, StudySession, StudyTask, TaskEvidence, TaskTimerState } from "../types/task";
 import { Button } from "../components/common/Button";
 import { Card } from "../components/common/Card";
@@ -9,7 +9,7 @@ import { TaskCard } from "../components/tasks/TaskCard";
 import { TaskFilter, TaskFilters } from "../components/tasks/TaskFilters";
 import { ReflectionPanel } from "../components/reflection/ReflectionPanel";
 import { formatChineseDate, getGreeting, getTodayString, getWeekdayName } from "../utils/date";
-import { calculateStreak, getCompletionPercent, getReflectionForDate, summarizeDay } from "../utils/statistics";
+import { getCompletionPercent, summarizeDay } from "../utils/statistics";
 import { getNextTaskRecommendation } from "../utils/recommendations";
 import { formatDuration } from "../utils/timer";
 import { sortTasks } from "../utils/taskSort";
@@ -74,9 +74,7 @@ export function TodayPage({
   const overdueTasks = tasks.filter((task) => task.date < today && (task.status === "overdue" || task.status === "pending" || task.status === "in_progress"));
   const summary = summarizeDay(tasks, today);
   const percent = getCompletionPercent(summary);
-  const streak = calculateStreak(tasks);
   const recommendation = getNextTaskRecommendation(tasks, today, timerState);
-  const todayReflection = getReflectionForDate(reflections, today);
   const displayTasks = useMemo(() => {
     const base = [...overdueTasks, ...visibleTodayTasks.filter((task) => !overdueTasks.some((overdue) => overdue.id === task.id))];
     const filtered = base.filter((task) => {
@@ -102,7 +100,7 @@ export function TodayPage({
           <ListTodo size={32} />
         </div>
         <h1 className="mt-5 text-2xl font-black">开始今天的学习计划吧</h1>
-        <p className="mt-3 text-slate-500 dark:text-slate-300">暂时还没有学习任务，请前往管理模式添加任务。</p>
+        <p className="mt-3 text-slate-500 dark:text-slate-300">暂时还没有任务，请去自己添加任务或导入日历文件。</p>
         <Button className="mt-6" onClick={onGoAdmin}>
           添加第一个任务
         </Button>
@@ -113,7 +111,7 @@ export function TodayPage({
   return (
     <div className="space-y-6">
       <section className="rounded-3xl bg-gradient-to-br from-sky-100 via-indigo-50 to-white p-5 shadow-soft sm:p-7 dark:from-sky-950 dark:via-indigo-950 dark:to-slate-900">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
           <div>
             <div className="text-sm font-semibold text-indigo-600 dark:text-indigo-200">
               {formatChineseDate(todayDate)} · {getWeekdayName(todayDate)}
@@ -123,22 +121,12 @@ export function TodayPage({
             </h1>
             <p className="mt-3 text-lg text-slate-600 dark:text-slate-300">{getEncouragement(percent, summary.total, overdueTasks.length)}</p>
           </div>
-          <div className="flex items-center gap-3 rounded-2xl bg-white/75 p-4 shadow-sm dark:bg-slate-900/70">
-            <Flame className="text-orange-500" size={28} />
-            <div>
-              <div className="text-sm text-slate-500 dark:text-slate-400">当前连续打卡</div>
-              <div className="text-2xl font-black">{streak} 天</div>
-            </div>
-          </div>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <Card><CalendarCheck2 className="text-sky-500" size={28} /><p className="mt-3 text-sm text-slate-500">今日任务总数</p><p className="text-3xl font-black">{summary.total}</p></Card>
+      <section className="grid grid-cols-2 gap-4">
+        <Card><CalendarCheck2 className="text-sky-500" size={28} /><p className="mt-3 text-sm text-slate-500">今日任务数</p><p className="text-3xl font-black">{summary.total}</p></Card>
         <Card><CheckCircle2 className="text-emerald-500" size={28} /><p className="mt-3 text-sm text-slate-500">已完成</p><p className="text-3xl font-black text-emerald-600">{summary.completed}</p></Card>
-        <Card><ListTodo className="text-orange-500" size={28} /><p className="mt-3 text-sm text-slate-500">未完成</p><p className="text-3xl font-black text-orange-500">{summary.pending}</p></Card>
-        <Card><AlertTriangle className="text-rose-500" size={28} /><p className="mt-3 text-sm text-slate-500">逾期提醒</p><p className="text-3xl font-black text-rose-500">{overdueTasks.length}</p></Card>
-        <Card><Clock3 className="text-indigo-500" size={28} /><p className="mt-3 text-sm text-slate-500">实际学习</p><p className="text-2xl font-black">{formatDuration(summary.actualSeconds)}</p></Card>
       </section>
 
       <Card className={summary.total > 0 && percent === 100 && settings.animationsEnabled ? "animate-pop" : ""}>
@@ -206,7 +194,7 @@ export function TodayPage({
         </div>
       </section>
 
-      <ReflectionPanel reflection={todayReflection} emphasized={percent === 100 && summary.total > 0} onSave={onSaveReflection} notify={notify} />
+      <ReflectionPanel reflections={reflections} emphasized={percent === 100 && summary.total > 0} onSave={onSaveReflection} notify={notify} />
 
       <Modal title="延期任务" open={Boolean(postponeTarget)} onClose={() => setPostponeTarget(null)}>
         <div className="space-y-4">
