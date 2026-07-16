@@ -1,4 +1,4 @@
-import { DailyReflection, StudyTask, SUBJECTS } from "../types/task";
+import { DailyReflection, StudyTask } from "../types/task";
 import { addDays, getCurrentWeekRange, getTodayString, parseLocalDate, toDateString } from "./date";
 
 export interface DaySummary {
@@ -8,11 +8,10 @@ export interface DaySummary {
   pending: number;
   overdue: number;
   postponed: number;
-  abandoned: number;
+  cancelled: number;
   makeup: number;
   minutes: number;
   plannedMinutes: number;
-  actualSeconds: number;
   status: "none" | "all" | "partial" | "empty";
 }
 
@@ -23,13 +22,12 @@ export const summarizeDay = (tasks: StudyTask[], date: string): DaySummary => {
   const completed = dayTasks.filter(isCompleted).length;
   const overdue = dayTasks.filter((task) => task.status === "overdue").length;
   const postponed = tasks.filter((task) => (task.originalScheduledDate ?? task.date) === date && task.status === "postponed").length;
-  const abandoned = dayTasks.filter((task) => task.status === "abandoned").length;
+  const cancelled = dayTasks.filter((task) => task.status === "cancelled").length;
   const makeup = dayTasks.filter((task) => isCompleted(task) && (task.completedAt?.slice(0, 10) ?? task.date) > (task.originalScheduledDate ?? task.date)).length;
   const plannedMinutes = dayTasks.reduce((sum, task) => sum + (task.estimatedMinutes ?? 0), 0);
-  const actualSeconds = dayTasks.reduce((sum, task) => sum + Math.max(0, task.actualSeconds ?? 0), 0);
 
   let status: DaySummary["status"] = "empty";
-  const accountable = dayTasks.filter((task) => task.status !== "abandoned");
+  const accountable = dayTasks.filter((task) => task.status !== "cancelled");
   if (accountable.length > 0 && completed === accountable.length) status = "all";
   if (accountable.length > 0 && completed > 0 && completed < accountable.length) status = "partial";
   if (accountable.length > 0 && completed === 0) status = "none";
@@ -38,20 +36,19 @@ export const summarizeDay = (tasks: StudyTask[], date: string): DaySummary => {
     date,
     total: dayTasks.length,
     completed,
-    pending: dayTasks.filter((task) => task.status === "pending" || task.status === "in_progress" || task.status === "overdue").length,
+    pending: dayTasks.filter((task) => task.status === "pending" || task.status === "overdue").length,
     overdue,
     postponed,
-    abandoned,
+    cancelled,
     makeup,
-    minutes: Math.round(actualSeconds / 60) || dayTasks.filter(isCompleted).reduce((sum, task) => sum + (task.estimatedMinutes ?? 0), 0),
+    minutes: plannedMinutes,
     plannedMinutes,
-    actualSeconds,
     status,
   };
 };
 
 export const getCompletionPercent = (summary: DaySummary): number => {
-  const accountable = summary.total - summary.abandoned;
+  const accountable = summary.total - summary.cancelled;
   if (accountable <= 0) return 0;
   return Math.round((summary.completed / accountable) * 100);
 };
@@ -101,13 +98,6 @@ export const getSubjectCompletedCounts = (tasks: StudyTask[]): Record<string, nu
   return tasks.reduce<Record<string, number>>((acc, task) => {
     if (!isCompleted(task)) return acc;
     acc[task.subject] = (acc[task.subject] ?? 0) + 1;
-    return acc;
-  }, {});
-};
-
-export const getSubjectStudySeconds = (tasks: StudyTask[]): Record<string, number> => {
-  return SUBJECTS.reduce<Record<string, number>>((acc, subject) => {
-    acc[subject] = tasks.filter((task) => task.subject === subject).reduce((sum, task) => sum + Math.max(0, task.actualSeconds ?? 0), 0);
     return acc;
   }, {});
 };

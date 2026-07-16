@@ -49,6 +49,17 @@ select {
   }
 }
 
+@keyframes fadeIn {
+  0% {
+    transform: translateY(-2px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 .animate-pop {
   animation: pop 280ms ease-out;
 }

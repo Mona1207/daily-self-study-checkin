@@ -1,7 +1,7 @@
 import { Priority, StudyTask, Subject } from "../types/task";
 
-export type ImportedCalendarTask = Omit<StudyTask, "id" | "createdAt" | "updatedAt" | "status" | "completed" | "actualSeconds"> &
-  Partial<Pick<StudyTask, "status" | "actualSeconds" | "evidenceRequirement">>;
+export type ImportedCalendarTask = Omit<StudyTask, "id" | "createdAt" | "updatedAt" | "status" | "completed"> &
+  Partial<Pick<StudyTask, "status" | "evidenceRequirement">>;
 
 const unfoldIcs = (text: string): string[] => text.replace(/\r\n/g, "\n").replace(/\n[ \t]/g, "").split("\n");
 

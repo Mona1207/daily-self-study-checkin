@@ -29,6 +29,7 @@ import {
 } from "../types/task";
 import { Button } from "../components/common/Button";
 import { Card } from "../components/common/Card";
+import { CollapsibleSection, resetCollapsiblePreferences } from "../components/common/CollapsibleSection";
 import { AppUpdateCard } from "../components/update/AppUpdateCard";
 import { exportFullBackupZip, readFullBackupZip, restoreBackupImages } from "../utils/backup";
 import { getTodayString } from "../utils/date";
@@ -41,7 +42,7 @@ interface SettingsPageProps {
   database: AppDatabase;
   settings: AppSettings;
   tasks: AppDatabase["tasks"];
-  onAddTasks: (tasks: Array<Omit<AppDatabase["tasks"][number], "id" | "createdAt" | "updatedAt" | "status" | "completed" | "actualSeconds">>) => number;
+  onAddTasks: (tasks: Array<Omit<AppDatabase["tasks"][number], "id" | "createdAt" | "updatedAt" | "status" | "completed">>) => number;
   onUpdateSettings: (settings: AppSettings) => void;
   onReplaceDatabase: (database: AppDatabase) => void;
   onSaveTemplate: (template: RecurringTaskTemplate) => void;
@@ -54,8 +55,6 @@ type Panel = "task" | "reminders" | "appearance" | "data" | "about";
 
 const inputClass =
   "min-h-11 w-full rounded-[10px] border border-[#E9EBEF] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#4F6EF7] focus:ring-4 focus:ring-[#4F6EF7]/10 dark:border-slate-700 dark:bg-slate-950";
-
-const sectionClass = "rounded-[12px] border border-[#E9EBEF] bg-white p-4 dark:border-slate-800 dark:bg-slate-900";
 
 const makeCategory = (name: string, color: string, order: number): TaskCategory => ({
   id: `category-${crypto.randomUUID()}`,
@@ -189,11 +188,11 @@ export function SettingsPage({
       </div>
       <div className="space-y-3">
         {[
-          { key: "task" as const, icon: <Layers3 size={20} />, title: "任务设置", desc: "分类管理、周期任务、默认时长" },
-          { key: "reminders" as const, icon: <Bell size={20} />, title: "提醒设置", desc: "每日提醒、任务提醒、回顾提醒" },
-          { key: "appearance" as const, icon: settings.darkMode ? <Moon size={20} /> : <Sun size={20} />, title: "外观设置", desc: "深色模式、动画、显示偏好" },
-          { key: "data" as const, icon: <Database size={20} />, title: "数据管理", desc: "导入导出、完整备份、清空数据" },
-          { key: "about" as const, icon: <Settings size={20} />, title: "关于", desc: "版本、隐私说明、更新检查" },
+          { key: "task" as const, icon: <Layers3 size={20} />, title: "任务与分类", desc: "分类管理、周期任务、默认任务设置" },
+          { key: "reminders" as const, icon: <Bell size={20} />, title: "提醒", desc: "通知与提醒" },
+          { key: "appearance" as const, icon: settings.darkMode ? <Moon size={20} /> : <Sun size={20} />, title: "外观", desc: "主题、字体和动画" },
+          { key: "data" as const, icon: <Database size={20} />, title: "数据", desc: "导入、导出与备份" },
+          { key: "about" as const, icon: <Settings size={20} />, title: "其他", desc: "隐私说明、使用帮助、关于 App" },
         ].map((item) => (
           <button key={item.key} className="flex w-full items-center gap-4 rounded-[12px] border border-[#E9EBEF] bg-white p-4 text-left dark:border-slate-800 dark:bg-slate-900" onClick={() => setPanel(item.key)}>
             <span className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[#F6F7F9] text-[#4F6EF7] dark:bg-slate-800">{item.icon}</span>
@@ -220,7 +219,7 @@ export function SettingsPage({
   const renderTaskPanel = () => (
     <div className="space-y-5">
       {renderHeader("任务设置")}
-      <Card>
+      <CollapsibleSection id="settings-categories" title="分类管理" count={categories.length} defaultExpanded>
         <h2 className="text-base font-semibold">分类管理</h2>
         <form className="mt-4 grid gap-3 sm:grid-cols-[1fr_120px_auto]" onSubmit={addCategory}>
           <input className={inputClass} value={categoryName} onChange={(event) => setCategoryName(event.target.value)} placeholder="新分类名称" />
@@ -238,8 +237,8 @@ export function SettingsPage({
             </div>
           ))}
         </div>
-      </Card>
-      <Card>
+      </CollapsibleSection>
+      <CollapsibleSection id="settings-recurring-active" title="周期任务" count={database.recurringTemplates.length} subtitle="正在使用" defaultExpanded>
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold">周期任务</h2>
@@ -280,78 +279,81 @@ export function SettingsPage({
           ))}
         </div>
         <Button className="mt-4" variant="secondary" icon={<RefreshCw size={18} />} onClick={() => notify("success", `已生成 ${onGenerateRecurring()} 个未来任务。`)}>生成未来任务</Button>
-      </Card>
-      <Card>
-        <h2 className="text-base font-semibold">默认任务时长</h2>
+      </CollapsibleSection>
+      <CollapsibleSection id="settings-default-task" title="默认任务设置" defaultExpanded={false}>
         <label className="mt-4 block text-sm font-medium">
           默认周期任务生成天数
           <input className={`${inputClass} mt-2`} type="number" min="1" value={settings.defaultRecurringGenerateDays} onChange={(event) => updateSetting({ defaultRecurringGenerateDays: Number(event.target.value) || 1 })} />
         </label>
-      </Card>
+      </CollapsibleSection>
     </div>
   );
 
   const renderRemindersPanel = () => (
     <div className="space-y-5">
       {renderHeader("提醒设置")}
-      <Card>
-        <p className="text-sm leading-6 text-[#6B7280]">提醒会尽量使用系统本地通知。首次开启时再申请权限，不会在首次打开 App 时打扰你。</p>
-        {["每日提醒", "任务提醒", "逾期提醒", "每日回顾提醒", "备份提醒"].map((label) => (
-          <label key={label} className="mt-4 flex items-center justify-between rounded-[12px] bg-[#F6F7F9] p-4 text-sm font-medium dark:bg-slate-800">
-            {label}
+      <p className="text-sm leading-6 text-[#6B7280]">提醒会尽量使用系统本地通知。首次开启时再申请权限，不会在首次打开 App 时打扰你。</p>
+      {["每日提醒", "任务提醒", "逾期提醒", "每日回顾提醒", "备份提醒"].map((label, index) => (
+        <CollapsibleSection key={label} id={`settings-reminder-${index}`} title={label} defaultExpanded={index === 0}>
+          <label className="flex items-center justify-between rounded-[12px] bg-[#F6F7F9] p-4 text-sm font-medium dark:bg-slate-800">
+            启用{label}
             <input type="checkbox" onChange={() => notify("info", "提醒偏好已记录，系统通知会在支持的平台上生效。")} />
           </label>
-        ))}
-      </Card>
+        </CollapsibleSection>
+      ))}
     </div>
   );
 
   const renderAppearancePanel = () => (
     <div className="space-y-5">
       {renderHeader("外观设置")}
-      <div className={sectionClass}>
+      <CollapsibleSection id="settings-theme" title="主题模式" defaultExpanded>
         <label className="flex items-center justify-between text-sm font-medium">
           深色模式
           <input type="checkbox" checked={settings.darkMode} onChange={(event) => updateSetting({ darkMode: event.target.checked })} />
         </label>
-      </div>
-      <div className={sectionClass}>
+      </CollapsibleSection>
+      <CollapsibleSection id="settings-animation" title="动画效果" defaultExpanded={false}>
         <label className="flex items-center justify-between text-sm font-medium">
           动画开关
           <input type="checkbox" checked={settings.animationsEnabled} onChange={(event) => updateSetting({ animationsEnabled: event.target.checked })} />
         </label>
-      </div>
-      <div className={sectionClass}>
+      </CollapsibleSection>
+      <CollapsibleSection id="settings-layout" title="布局偏好" defaultExpanded={false}>
         <label className="flex items-center justify-between text-sm font-medium">
           显示预计时间
           <input type="checkbox" checked={settings.showEstimatedTime} onChange={(event) => updateSetting({ showEstimatedTime: event.target.checked })} />
         </label>
-      </div>
+        <Button className="mt-4" variant="secondary" onClick={() => { resetCollapsiblePreferences(); notify("success", "已恢复默认布局，重新打开页面后生效。"); }}>恢复默认布局</Button>
+      </CollapsibleSection>
     </div>
   );
 
   const renderDataPanel = () => (
     <div className="space-y-5">
       {renderHeader("数据管理")}
-      <Card>
+      <input ref={jsonImportRef} type="file" accept=".json,application/json" className="hidden" onChange={(event) => handleJsonImport(event, "merge")} />
+      <input ref={zipImportRef} type="file" accept=".zip,application/zip" className="hidden" onChange={handleZipImport} />
+      <CollapsibleSection id="settings-backup" title="备份与恢复" defaultExpanded>
         <p className="text-sm leading-6 text-[#6B7280]">所有数据默认只保存在当前设备。卸载 App 或清除数据可能导致记录丢失，请定期导出备份。</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Button variant="secondary" icon={<Download size={18} />} onClick={exportJson}>导出全部数据</Button>
-          <Button variant="secondary" icon={<Upload size={18} />} onClick={() => jsonImportRef.current?.click()}>导入数据</Button>
           <Button variant="secondary" icon={<FileArchive size={18} />} onClick={() => exportFullBackupZip(database, `today-list-backup-${getTodayString()}.zip`).then(() => notify("success", "完整备份已导出。")).catch((error) => notify("error", error.message))}>导出完整备份</Button>
           <Button variant="secondary" icon={<FileJson size={18} />} onClick={() => zipImportRef.current?.click()}>恢复备份</Button>
-          <Button variant="danger" icon={<Trash2 size={18} />} onClick={clearAllData}>清空数据</Button>
         </div>
-        <input ref={jsonImportRef} type="file" accept=".json,application/json" className="hidden" onChange={(event) => handleJsonImport(event, "merge")} />
-        <input ref={zipImportRef} type="file" accept=".zip,application/zip" className="hidden" onChange={handleZipImport} />
-      </Card>
-      <Card>
-        <h2 className="text-base font-semibold">存储概览</h2>
+      </CollapsibleSection>
+      <CollapsibleSection id="settings-import" title="数据导入" defaultExpanded={false}>
+        <Button variant="secondary" icon={<Upload size={18} />} onClick={() => jsonImportRef.current?.click()}>导入 JSON 数据</Button>
+      </CollapsibleSection>
+      <CollapsibleSection id="settings-storage" title="存储占用" defaultExpanded={false}>
         <div className="mt-4 grid grid-cols-2 gap-3 text-center">
           <div className="rounded-[12px] bg-[#F6F7F9] p-4 dark:bg-slate-800"><div className="text-2xl font-semibold">{tasks.length}</div><div className="mt-1 text-xs text-[#6B7280]">任务</div></div>
           <div className="rounded-[12px] bg-[#F6F7F9] p-4 dark:bg-slate-800"><div className="text-2xl font-semibold">{database.evidences.length}</div><div className="mt-1 text-xs text-[#6B7280]">完成记录</div></div>
         </div>
-      </Card>
+      </CollapsibleSection>
+      <CollapsibleSection id="settings-danger" title="危险操作" defaultExpanded={false}>
+        <Button variant="danger" icon={<Trash2 size={18} />} onClick={clearAllData}>清空全部数据</Button>
+      </CollapsibleSection>
     </div>
   );
 
@@ -362,7 +364,7 @@ export function SettingsPage({
         <h2 className="text-base font-semibold">今日清单</h2>
         <p className="mt-2 text-sm text-[#6B7280]">把每天要做的事，清楚地安排好。</p>
         <p className="mt-4 text-sm text-[#6B7280]">当前版本：{APP_VERSION} ({APP_VERSION_CODE})</p>
-        <p className="mt-4 text-sm leading-6 text-[#6B7280]">应用不需要注册登录，不使用后端，不包含社交功能。任务、计时、每日回顾和完成记录默认只保存在当前设备。</p>
+        <p className="mt-4 text-sm leading-6 text-[#6B7280]">应用不需要注册登录，不使用后端，不包含社交功能。任务、每日回顾和完成记录默认只保存在当前设备。</p>
       </Card>
       <AppUpdateCard notify={notify} />
     </div>

@@ -6,10 +6,8 @@ import {
   EvidenceImage,
   ExportData,
   RecurringTaskTemplate,
-  StudySession,
   StudyTask,
   TaskEvidence,
-  TaskTimerState,
 } from "../types/task";
 import { defaultSettings, migrateData, normalizeTask } from "./migrations";
 
@@ -17,7 +15,6 @@ export const APP_DB_STORAGE_KEY = "self-study-app-db-v2";
 export const LEGACY_TASKS_STORAGE_KEY = "self-study-tasks";
 export const LEGACY_SETTINGS_STORAGE_KEY = "self-study-settings";
 export const SNAPSHOT_STORAGE_KEY = "self-study-snapshots-v2";
-export const ADMIN_SESSION_KEY = "self-study-admin-session";
 export const EXPORT_VERSION = CURRENT_DATA_VERSION;
 
 const IMAGE_DB_NAME = "self-study-evidence-images";
@@ -59,7 +56,6 @@ export const createEmptyDatabase = (): AppDatabase => ({
   updatedAt: new Date().toISOString(),
   tasks: [],
   recurringTemplates: [],
-  studySessions: [],
   reflections: [],
   evidences: [],
   settings: defaultSettings(),
@@ -128,7 +124,7 @@ export const applyOverdue = (database: AppDatabase): AppDatabase => {
   const today = new Date().toISOString().slice(0, 10);
   let changed = false;
   const tasks = database.tasks.map((task) => {
-    if ((task.status === "pending" || task.status === "in_progress") && task.date < today) {
+    if (task.status === "pending" && task.date < today) {
       changed = true;
       return { ...task, status: "overdue" as const, completed: false, updatedAt: new Date().toISOString() };
     }
@@ -171,18 +167,6 @@ export const saveRecurringTemplates = (recurringTemplates: RecurringTaskTemplate
   updateDatabase((database) => ({ ...database, recurringTemplates }));
 };
 
-export const getStudySessions = (): StudySession[] => getDatabase().studySessions;
-
-export const saveStudySessions = (studySessions: StudySession[]): void => {
-  updateDatabase((database) => ({ ...database, studySessions }));
-};
-
-export const getTimerState = (): TaskTimerState | undefined => getDatabase().timerState;
-
-export const saveTimerState = (timerState?: TaskTimerState): void => {
-  updateDatabase((database) => ({ ...database, timerState }));
-};
-
 export const getEvidences = (): TaskEvidence[] => getDatabase().evidences;
 
 export const saveEvidences = (evidences: TaskEvidence[]): void => {
@@ -203,7 +187,6 @@ export const validateExportData = (value: unknown): ExportData => {
     tasks: migrated.tasks,
     settings: migrated.settings,
     recurringTemplates: migrated.recurringTemplates,
-    studySessions: migrated.studySessions,
     reflections: migrated.reflections,
     evidences: migrated.evidences,
   };
@@ -228,7 +211,6 @@ export const importDatabase = (incoming: unknown, mode: "replace" | "merge"): { 
     ...current,
     tasks: Array.from(taskMap.values()),
     recurringTemplates: [...current.recurringTemplates, ...migrated.recurringTemplates.filter((item) => !current.recurringTemplates.some((old) => old.id === item.id))],
-    studySessions: [...current.studySessions, ...migrated.studySessions.filter((item) => !current.studySessions.some((old) => old.id === item.id))],
     reflections: [...current.reflections.filter((item) => !migrated.reflections.some((nextItem) => nextItem.date === item.date)), ...migrated.reflections],
     evidences: [...current.evidences.filter((item) => !migrated.evidences.some((nextItem) => nextItem.id === item.id)), ...migrated.evidences],
     settings: { ...current.settings, ...migrated.settings, onboarded: true },
@@ -245,7 +227,6 @@ export const exportTasks = (): ExportData => {
     tasks: database.tasks,
     settings: database.settings,
     recurringTemplates: database.recurringTemplates,
-    studySessions: database.studySessions,
     reflections: database.reflections,
     evidences: database.evidences,
   };
@@ -271,12 +252,12 @@ const imageTransaction = async <T,>(mode: IDBTransactionMode, action: (store: ID
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(IMAGE_STORE, mode);
     const request = action(transaction.objectStore(IMAGE_STORE));
-    request.onerror = () => reject(new Error("图片证明保存或读取失败，可能是存储空间不足。"));
+    request.onerror = () => reject(new Error("图片记录保存或读取失败，可能是存储空间不足。"));
     request.onsuccess = () => resolve(request.result);
     transaction.oncomplete = () => db.close();
     transaction.onerror = () => {
       db.close();
-      reject(new Error("图片证明保存或读取失败，可能是存储空间不足。"));
+      reject(new Error("图片记录保存或读取失败，可能是存储空间不足。"));
     };
   });
 };

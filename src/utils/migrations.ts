@@ -7,7 +7,6 @@ import {
   EvidenceRequirement,
   Priority,
   RecurringTaskTemplate,
-  StudySession,
   StudyTask,
   Subject,
   TaskEvidence,
@@ -40,9 +39,11 @@ const subject = (value: unknown): Subject => {
 };
 
 const status = (value: unknown, completed: boolean, date: string): TaskStatus => {
-  if (value === "pending" || value === "in_progress" || value === "completed" || value === "overdue" || value === "postponed" || value === "cancelled" || value === "abandoned") {
+  if (value === "completed" || value === "overdue" || value === "postponed" || value === "cancelled") {
     return value;
   }
+  if (value === "abandoned") return "cancelled";
+  if (value === "in_progress") return date < getTodayString() ? "overdue" : "pending";
   if (completed) return "completed";
   return date < getTodayString() ? "overdue" : "pending";
 };
@@ -106,7 +107,6 @@ export const normalizeTask = (raw: unknown): StudyTask => {
     categoryId: asString(item.categoryId, "") || undefined,
     description: asString(item.description, "") || undefined,
     estimatedMinutes: asNumber(item.estimatedMinutes),
-    actualSeconds: Math.max(0, asNumber(item.actualSeconds, 0) ?? 0),
     priority: priority(item.priority),
     status: status(item.status, completed, date),
     evidenceRequirement: evidenceRequirement(item.evidenceRequirement),
@@ -170,18 +170,6 @@ const normalizeEvidence = (raw: unknown): TaskEvidence => {
   };
 };
 
-const normalizeSession = (raw: unknown): StudySession => {
-  const item = isRecord(raw) ? raw : {};
-  const now = new Date().toISOString();
-  return {
-    id: asString(item.id, crypto.randomUUID()),
-    taskId: asString(item.taskId, ""),
-    startedAt: asString(item.startedAt, now),
-    endedAt: asString(item.endedAt, "") || undefined,
-    durationSeconds: Math.max(0, asNumber(item.durationSeconds, 0) ?? 0),
-  };
-};
-
 const normalizeReflection = (raw: unknown): DailyReflection => {
   const item = isRecord(raw) ? raw : {};
   const now = new Date().toISOString();
@@ -214,13 +202,6 @@ export const migrateData = (rawData: unknown): AppDatabase => {
     updatedAt: new Date().toISOString(),
     tasks: Array.from(dedupedTasks.values()),
     recurringTemplates: Array.isArray(raw.recurringTemplates) ? raw.recurringTemplates.map(normalizeTemplate) : [],
-    studySessions: Array.isArray(raw.studySessions) ? raw.studySessions.map(normalizeSession).filter((session) => session.taskId) : [],
-    timerState: isRecord(raw.timerState) && asString(raw.timerState.taskId, "") ? {
-      taskId: asString(raw.timerState.taskId, ""),
-      running: asBoolean(raw.timerState.running, false),
-      startedAt: asString(raw.timerState.startedAt, "") || undefined,
-      accumulatedSeconds: Math.max(0, asNumber(raw.timerState.accumulatedSeconds, 0) ?? 0),
-    } : undefined,
     reflections: Array.isArray(raw.reflections) ? raw.reflections.map(normalizeReflection) : [],
     evidences: Array.isArray(raw.evidences) ? raw.evidences.map(normalizeEvidence).filter((evidence) => evidence.taskId) : [],
     settings: normalizeSettings(raw.settings),

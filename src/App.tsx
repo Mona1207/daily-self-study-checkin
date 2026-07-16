@@ -15,7 +15,6 @@ import { createDemoTasks } from "./data/demoTasks";
 import { PUBLISHED_TASKS_VERSION, publishedTasks } from "./data/publishedTasks";
 import { getTodayString } from "./utils/date";
 import { summarizeDay } from "./utils/statistics";
-import { isTimerCrossDay } from "./utils/timer";
 
 export default function App() {
   const store = useTasks();
@@ -23,8 +22,6 @@ export default function App() {
     database,
     tasks,
     settings,
-    timerState,
-    studySessions,
     evidences,
     reflections,
     addTask,
@@ -39,9 +36,6 @@ export default function App() {
     generateRecurringTasks,
     saveEvidence,
     saveReflection,
-    startTimer,
-    pauseTimer,
-    resetTimer,
     replaceDatabase,
   } = store;
   const [page, setPage] = useState<PageKey>("today");
@@ -73,11 +67,6 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [database.recurringTemplates.length]);
 
-  useEffect(() => {
-    if (isTimerCrossDay(timerState)) notify("info", "检测到有跨天计时，建议先暂停确认实际时长。");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const notify = (type: ToastType, message: string) => {
     const id = crypto.randomUUID();
     setToasts((current) => [...current, { id, type, message }]);
@@ -96,15 +85,10 @@ export default function App() {
       tasks: mode === "demo" ? createDemoTasks() : [],
       settings: { ...settings, onboarded: true, userName: settings.userName || "我" },
     });
-    notify(mode === "demo" ? "success" : "info", mode === "demo" ? "示例任务已准备好。" : "开始创建你的第一件事吧。");
-  };
-
-  const stopTimerForTask = (task: StudyTask) => {
-    if (timerState?.taskId === task.id) pauseTimer(task.id);
+    notify(mode === "demo" ? "success" : "info", mode === "demo" ? "示例任务已准备好。" : "可以创建你的第一件事了。");
   };
 
   const markComplete = (task: StudyTask) => {
-    stopTimerForTask(task);
     updateTask(task.id, { status: "completed", completedAt: new Date().toISOString(), completed: true });
     const today = getTodayString();
     const nextTasks = tasks.map((item) => (item.id === task.id ? { ...item, status: "completed" as const, completedAt: new Date().toISOString() } : item));
@@ -138,14 +122,6 @@ export default function App() {
     notify("info", "已撤销完成。");
   };
 
-  const handleStart = (task: StudyTask) => {
-    if (timerState?.running && timerState.taskId !== task.id) {
-      const oldTask = tasks.find((item) => item.id === timerState.taskId);
-      if (!window.confirm(`“${oldTask?.title ?? "另一个任务"}”正在计时。是否暂停它并开始当前任务？`)) return;
-    }
-    startTimer(task, true);
-  };
-
   const handlePostpone = (task: StudyTask, toDate: string, reason?: string, copy = false) => {
     const record = { fromDate: task.date, toDate, reason, postponedAt: new Date().toISOString() };
     const nextTask = {
@@ -156,7 +132,6 @@ export default function App() {
       status: "pending" as const,
       completedAt: undefined,
       evidenceId: undefined,
-      actualSeconds: 0,
       postponeHistory: [...(task.postponeHistory ?? []), record],
     };
     if (!copy) updateTask(task.id, { status: "postponed", postponeHistory: [...(task.postponeHistory ?? []), record] });
@@ -179,7 +154,7 @@ export default function App() {
             <div className="mt-8 space-y-3">
               <button className="flex w-full items-center gap-3 rounded-[12px] border border-[#E9EBEF] bg-white p-4 text-left dark:border-slate-800 dark:bg-slate-900" onClick={() => finishOnboarding("blank")}>
                 <Plus className="text-[#4F6EF7]" size={22} />
-                <div><div className="font-semibold">创建第一个任务</div><div className="text-sm text-[#6B7280]">从空白清单开始</div></div>
+                <div><div className="font-semibold">创建第一个任务</div><div className="text-sm text-[#6B7280]">从空白清单创建</div></div>
               </button>
               <button className="flex w-full items-center gap-3 rounded-[12px] border border-[#E9EBEF] bg-white p-4 text-left dark:border-slate-800 dark:bg-slate-900" onClick={() => finishOnboarding("demo")}>
                 <Sparkles className="text-[#4F6EF7]" size={22} />
@@ -203,19 +178,16 @@ export default function App() {
         <TodayPage
           tasks={tasks}
           settings={settings}
-          timerState={timerState}
-          sessions={studySessions}
           evidences={evidences}
           reflections={reflections}
           onAddTask={addTask}
+          onUpdateTask={(task, patch) => { updateTask(task.id, patch); notify("success", "任务已更新。"); }}
+          onDeleteTask={(task) => { if (window.confirm(`确定删除“${task.title}”吗？`)) { deleteTask(task.id); notify("success", "任务已删除。"); } }}
           onComplete={handleComplete}
           onUndo={handleUndo}
-          onStart={handleStart}
-          onPause={(task) => pauseTimer(task.id)}
-          onResetTimer={(task) => resetTimer(task.id)}
           onEvidence={(task) => { setCompleteAfterEvidence(false); setEvidenceTarget(task); }}
           onPostpone={handlePostpone}
-          onAbandon={(task) => { updateTask(task.id, { status: "cancelled" }); notify("info", "已取消任务。"); }}
+          onCancel={(task) => { updateTask(task.id, { status: "cancelled" }); notify("info", "已取消任务。"); }}
           onRestore={(task) => { updateTask(task.id, { status: task.date < getTodayString() ? "overdue" : "pending" }); notify("success", "任务已恢复。"); }}
           onSaveReflection={saveReflection}
           onGoCalendar={() => setPage("calendar")}

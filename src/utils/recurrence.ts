@@ -45,7 +45,6 @@ export const generateTasksFromTemplates = (
         subject: template.subject,
         description: template.description,
         estimatedMinutes: template.estimatedMinutes,
-        actualSeconds: 0,
         priority: template.priority,
         status: "pending",
         evidenceRequirement: template.evidenceRequirement,

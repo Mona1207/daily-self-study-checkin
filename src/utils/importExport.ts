@@ -17,7 +17,6 @@ export const buildExportData = (databaseOrTasks: AppDatabase | StudyTask[], sett
     tasks: databaseOrTasks.tasks,
     settings: databaseOrTasks.settings,
     recurringTemplates: databaseOrTasks.recurringTemplates,
-    studySessions: databaseOrTasks.studySessions,
     reflections: databaseOrTasks.reflections,
     evidences: databaseOrTasks.evidences,
   };
@@ -56,7 +55,6 @@ export const buildTemplateData = (): ExportData => {
         subject: "工作",
         description: "这里填写任务说明",
         estimatedMinutes: 30,
-        actualSeconds: 0,
         priority: "medium",
         status: "pending",
         evidenceRequirement: "text",

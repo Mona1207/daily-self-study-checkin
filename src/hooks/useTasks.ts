@@ -1,20 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
-import {
-  AppDatabase,
-  DailyReflection,
-  RecurringTaskTemplate,
-  StudySession,
-  StudyTask,
-  TaskEvidence,
-  TaskTimerState,
-} from "../types/task";
+import { AppDatabase, DailyReflection, RecurringTaskTemplate, StudyTask, TaskEvidence } from "../types/task";
 import * as storage from "../utils/storage";
 import { normalizeTask } from "../utils/migrations";
 import { generateTasksFromTemplates } from "../utils/recurrence";
-import { secondsBetween } from "../utils/timer";
 
-type NewTaskInput = Omit<StudyTask, "id" | "createdAt" | "updatedAt" | "status" | "completed" | "actualSeconds"> &
-  Partial<Pick<StudyTask, "status" | "actualSeconds" | "evidenceRequirement">>;
+type NewTaskInput = Omit<StudyTask, "id" | "createdAt" | "updatedAt" | "status" | "completed"> &
+  Partial<Pick<StudyTask, "status" | "evidenceRequirement">>;
 
 const nowIso = () => new Date().toISOString();
 
@@ -37,12 +28,7 @@ export const useTasks = () => {
     [database, persist],
   );
 
-  const replaceDatabase = useCallback(
-    (next: AppDatabase) => {
-      persist(next);
-    },
-    [persist],
-  );
+  const replaceDatabase = useCallback((next: AppDatabase) => persist(next), [persist]);
 
   const replaceTasks = useCallback(
     (tasks: StudyTask[]) => updateDatabase((db) => ({ ...db, tasks: tasks.map(normalizeTask) })),
@@ -56,7 +42,6 @@ export const useTasks = () => {
         ...task,
         id: crypto.randomUUID(),
         status: task.status ?? "pending",
-        actualSeconds: task.actualSeconds ?? 0,
         evidenceRequirement: task.evidenceRequirement ?? "none",
         createdAt: now,
         updatedAt: now,
@@ -75,7 +60,6 @@ export const useTasks = () => {
           ...task,
           id: crypto.randomUUID(),
           status: task.status ?? "pending",
-          actualSeconds: task.actualSeconds ?? 0,
           evidenceRequirement: task.evidenceRequirement ?? "none",
           createdAt: now,
           updatedAt: now,
@@ -129,7 +113,6 @@ export const useTasks = () => {
           status: "pending",
           completed: false,
           completedAt: undefined,
-          actualSeconds: 0,
           evidenceId: undefined,
           createdAt: now,
           updatedAt: now,
@@ -199,101 +182,12 @@ export const useTasks = () => {
     [updateDatabase],
   );
 
-  const setTimerState = useCallback(
-    (timerState?: TaskTimerState) => updateDatabase((db) => ({ ...db, timerState })),
-    [updateDatabase],
-  );
-
-  const addSession = useCallback(
-    (session: StudySession) => updateDatabase((db) => ({ ...db, studySessions: [...db.studySessions, session] })),
-    [updateDatabase],
-  );
-
-  const startTimer = useCallback(
-    (task: StudyTask, forcePauseExisting = false) => {
-      const current = database.timerState;
-      if (current?.running && current.taskId !== task.id && !forcePauseExisting) {
-        throw new Error("已有任务正在计时。");
-      }
-      updateDatabase((db) => {
-        let tasks = db.tasks;
-        const sessions = [...db.studySessions];
-        if (db.timerState?.running && db.timerState.taskId !== task.id) {
-          const elapsed = secondsBetween(db.timerState.startedAt);
-          tasks = tasks.map((item) => (item.id === db.timerState?.taskId ? { ...item, actualSeconds: db.timerState.accumulatedSeconds + elapsed, updatedAt: nowIso() } : item));
-          sessions.push({
-            id: crypto.randomUUID(),
-            taskId: db.timerState.taskId,
-            startedAt: db.timerState.startedAt ?? nowIso(),
-            endedAt: nowIso(),
-            durationSeconds: elapsed,
-          });
-        }
-        const target = tasks.find((item) => item.id === task.id);
-        return {
-          ...db,
-          studySessions: sessions,
-          tasks: tasks.map((item) => (item.id === task.id ? { ...item, status: item.status === "completed" ? "completed" : "in_progress", updatedAt: nowIso() } : item)),
-          timerState: {
-            taskId: task.id,
-            running: true,
-            startedAt: nowIso(),
-            accumulatedSeconds: Math.max(0, target?.actualSeconds ?? 0),
-          },
-        };
-      });
-    },
-    [database.timerState, updateDatabase],
-  );
-
-  const pauseTimer = useCallback(
-    (taskId: string) => {
-      updateDatabase((db) => {
-        if (!db.timerState || db.timerState.taskId !== taskId) return db;
-        const elapsed = db.timerState.running ? secondsBetween(db.timerState.startedAt) : 0;
-        const total = Math.max(0, db.timerState.accumulatedSeconds + elapsed);
-        return {
-          ...db,
-          tasks: db.tasks.map((task) => (task.id === taskId ? { ...task, actualSeconds: total, status: task.status === "completed" ? "completed" : "pending", updatedAt: nowIso() } : task)),
-          studySessions: db.timerState.running
-            ? [
-                ...db.studySessions,
-                {
-                  id: crypto.randomUUID(),
-                  taskId,
-                  startedAt: db.timerState.startedAt ?? nowIso(),
-                  endedAt: nowIso(),
-                  durationSeconds: elapsed,
-                },
-              ]
-            : db.studySessions,
-          timerState: { taskId, running: false, accumulatedSeconds: total },
-        };
-      });
-    },
-    [updateDatabase],
-  );
-
-  const resetTimer = useCallback(
-    (taskId: string) => {
-      updateDatabase((db) => ({
-        ...db,
-        tasks: db.tasks.map((task) => (task.id === taskId ? { ...task, actualSeconds: 0, updatedAt: nowIso() } : task)),
-        studySessions: db.studySessions.filter((session) => session.taskId !== taskId),
-        timerState: db.timerState?.taskId === taskId ? undefined : db.timerState,
-      }));
-    },
-    [updateDatabase],
-  );
-
   return useMemo(
     () => ({
       database,
       tasks: database.tasks,
       settings: database.settings,
       recurringTemplates: database.recurringTemplates,
-      studySessions: database.studySessions,
-      timerState: database.timerState,
       evidences: database.evidences,
       reflections: database.reflections,
       addTask,
@@ -308,16 +202,10 @@ export const useTasks = () => {
       generateRecurringTasks,
       saveEvidence,
       saveReflection,
-      setTimerState,
-      addSession,
-      startTimer,
-      pauseTimer,
-      resetTimer,
       replaceDatabase,
       refreshAll,
     }),
     [
-      addSession,
       addTask,
       addTasks,
       copyDay,
@@ -326,16 +214,12 @@ export const useTasks = () => {
       deleteTemplate,
       generateRecurringTasks,
       mergeTasks,
-      pauseTimer,
       refreshAll,
       replaceDatabase,
       replaceTasks,
-      resetTimer,
       saveEvidence,
       saveReflection,
       saveTemplate,
-      setTimerState,
-      startTimer,
       updateTask,
     ],
   );

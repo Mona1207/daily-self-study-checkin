@@ -3,7 +3,7 @@ export type Priority = "low" | "medium" | "high";
 
 export type Subject = "工作" | "学习" | "生活" | "运动" | "阅读" | "健康" | "购物" | "个人" | "其他" | "语文" | "数学" | "英语" | "物理" | "化学" | "地理" | "历史" | "生物" | "政治";
 
-export type TaskStatus = "pending" | "in_progress" | "completed" | "overdue" | "postponed" | "cancelled" | "abandoned";
+export type TaskStatus = "pending" | "completed" | "overdue" | "postponed" | "cancelled";
 
 export type EvidenceRequirement = "none" | "text" | "number" | "image" | "text_and_image";
 
@@ -30,7 +30,6 @@ export interface StudyTask {
   categoryId?: string;
   description?: string;
   estimatedMinutes?: number;
-  actualSeconds?: number;
   priority: Priority;
   status: TaskStatus;
   evidenceRequirement: EvidenceRequirement;
@@ -89,21 +88,6 @@ export interface RecurringTaskTemplate {
   autoGenerate: boolean;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface StudySession {
-  id: string;
-  taskId: string;
-  startedAt: string;
-  endedAt?: string;
-  durationSeconds: number;
-}
-
-export interface TaskTimerState {
-  taskId: string;
-  running: boolean;
-  startedAt?: string;
-  accumulatedSeconds: number;
 }
 
 export interface TaskEvidence {
@@ -167,8 +151,6 @@ export interface AppDatabase {
   updatedAt: string;
   tasks: StudyTask[];
   recurringTemplates: RecurringTaskTemplate[];
-  studySessions: StudySession[];
-  timerState?: TaskTimerState;
   reflections: DailyReflection[];
   evidences: TaskEvidence[];
   settings: AppSettings;
@@ -187,7 +169,6 @@ export interface ExportData {
   tasks: StudyTask[];
   settings: Partial<AppSettings>;
   recurringTemplates?: RecurringTaskTemplate[];
-  studySessions?: StudySession[];
   reflections?: DailyReflection[];
   evidences?: TaskEvidence[];
 }
@@ -211,12 +192,10 @@ export const PRIORITY_LABEL: Record<Priority, string> = {
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
   pending: "待完成",
-  in_progress: "进行中",
   completed: "已完成",
   overdue: "已逾期",
   postponed: "已延期",
   cancelled: "已取消",
-  abandoned: "已取消",
 };
 
 export const EVIDENCE_LABEL: Record<EvidenceRequirement, string> = {
@@ -235,4 +214,4 @@ export const MOOD_LABEL: Record<DailyMood, string> = {
   adjust: "需要调整",
 };
 
-export const CURRENT_DATA_VERSION = 2;
+export const CURRENT_DATA_VERSION = 3;

@@ -3,14 +3,15 @@ import { ChevronLeft, ChevronRight, Plus, Save } from "lucide-react";
 import { AppSettings, DailyReflection, StudyTask, Subject, SUBJECTS } from "../types/task";
 import { Button } from "../components/common/Button";
 import { Card } from "../components/common/Card";
+import { CollapsibleSection } from "../components/common/CollapsibleSection";
 import { Modal } from "../components/common/Modal";
 import { TaskCard } from "../components/tasks/TaskCard";
 import { formatChineseDate, getMonthDays, getTodayString, isSameMonth, toDateString } from "../utils/date";
 import { summarizeDay } from "../utils/statistics";
 import { sortTasks } from "../utils/taskSort";
 
-type NewCalendarTask = Omit<StudyTask, "id" | "createdAt" | "updatedAt" | "status" | "completed" | "actualSeconds"> &
-  Partial<Pick<StudyTask, "status" | "actualSeconds" | "evidenceRequirement">>;
+type NewCalendarTask = Omit<StudyTask, "id" | "createdAt" | "updatedAt" | "status" | "completed"> &
+  Partial<Pick<StudyTask, "status" | "evidenceRequirement">>;
 
 interface CalendarPageProps {
   tasks: StudyTask[];
@@ -40,6 +41,12 @@ export function CalendarPage({ tasks, settings, reflections = [], onAddTask }: C
   const days = useMemo(() => getMonthDays(monthCursor.getFullYear(), monthCursor.getMonth()), [monthCursor]);
   const selectedSummary = summarizeDay(tasks, selectedDate);
   const selectedTasks = sortTasks(tasks.filter((task) => task.date === selectedDate));
+  const grouped = useMemo(() => ({
+    overdue: selectedTasks.filter((task) => task.status === "overdue"),
+    pending: selectedTasks.filter((task) => task.status === "pending"),
+    completed: selectedTasks.filter((task) => task.status === "completed"),
+    other: selectedTasks.filter((task) => task.status === "postponed" || task.status === "cancelled"),
+  }), [selectedTasks]);
 
   const changeMonth = (offset: number) => {
     setMonthCursor(new Date(monthCursor.getFullYear(), monthCursor.getMonth() + offset, 1));
@@ -160,9 +167,28 @@ export function CalendarPage({ tasks, settings, reflections = [], onAddTask }: C
                 {onAddTask && <Button className="mt-4" icon={<Plus size={18} />} onClick={() => setAddOpen(true)}>添加任务</Button>}
               </Card>
             ) : (
-              selectedTasks.map((task) => (
-                <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact />
-              ))
+              <>
+                {grouped.overdue.length > 0 && (
+                  <CollapsibleSection id="calendar-overdue" title="已逾期" count={grouped.overdue.length} defaultExpanded>
+                    <div className="space-y-2">{grouped.overdue.map((task) => <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact />)}</div>
+                  </CollapsibleSection>
+                )}
+                {grouped.pending.length > 0 && (
+                  <CollapsibleSection id="calendar-pending" title="待完成" count={grouped.pending.length} defaultExpanded>
+                    <div className="space-y-2">{grouped.pending.map((task) => <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact />)}</div>
+                  </CollapsibleSection>
+                )}
+                {grouped.completed.length > 0 && (
+                  <CollapsibleSection id="calendar-completed" title="已完成" count={grouped.completed.length} defaultExpanded={false}>
+                    <div className="space-y-2">{grouped.completed.map((task) => <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact />)}</div>
+                  </CollapsibleSection>
+                )}
+                {grouped.other.length > 0 && (
+                  <CollapsibleSection id="calendar-other" title="已延期和已取消" count={grouped.other.length} defaultExpanded={false}>
+                    <div className="space-y-2">{grouped.other.map((task) => <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact />)}</div>
+                  </CollapsibleSection>
+                )}
+              </>
             )}
           </div>
         </div>
