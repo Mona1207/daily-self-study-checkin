@@ -34,6 +34,34 @@ pnpm run dev
 pnpm run build
 ```
 
+## 打包成手机 App
+
+本项目已接入 Capacitor，可以作为原生 Android / iOS App 打包。应用包名为 `com.mona1207.selfstudycheckin`，应用名为“每日自学打卡”。
+
+同步网页资源到原生工程：
+
+```bash
+npm run app:sync
+```
+
+打开 Android 工程：
+
+```bash
+npm run app:android
+```
+
+然后在 Android Studio 中连接手机，点击 Run，或构建 APK / AAB。
+
+打开 iOS 工程：
+
+```bash
+npm run app:ios
+```
+
+然后在 Xcode 中选择 Team、连接 iPhone，点击 Run，或按 App Store 要求归档发布。
+
+注意：Android 打包需要安装 Java Runtime 和 Android Studio；iOS 打包需要 macOS、完整 Xcode 和 Apple 开发者签名配置。
+
 ## PWA 安装说明
 
 使用支持 PWA 的浏览器打开网站后，如果浏览器触发安装能力，侧栏会显示“安装到桌面”按钮。构建产物包含 manifest、service worker、192x192、512x512 和 maskable 图标。离线缓存只缓存静态资源，本地任务数据仍保存在当前浏览器。
