@@ -1,5 +1,5 @@
-import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
-import { CalendarPlus, Copy, Download, Edit3, FileArchive, FileJson, LockKeyhole, Plus, RefreshCw, Save, Trash2, Upload } from "lucide-react";
+import { ChangeEvent, FormEvent, ReactNode, useMemo, useRef, useState } from "react";
+import { CalendarPlus, ChevronDown, ChevronUp, Copy, Download, Edit3, FileArchive, FileJson, LockKeyhole, Plus, RefreshCw, Save, Trash2, Upload } from "lucide-react";
 import {
   AppDatabase,
   AppSettings,
@@ -117,6 +117,33 @@ function DraftFields({ draft, onChange }: { draft: TaskDraft; onChange: (draft: 
   );
 }
 
+function CollapsibleAdminCard({
+  title,
+  description,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  description?: string;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Card>
+      <button className="flex w-full items-center justify-between gap-3 text-left" onClick={onToggle}>
+        <div>
+          <h2 className="text-xl font-black">{title}</h2>
+          {description && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{description}</p>}
+        </div>
+        {open ? <ChevronUp className="shrink-0 text-slate-400" size={22} /> : <ChevronDown className="shrink-0 text-slate-400" size={22} />}
+      </button>
+      {open && <div className="mt-5">{children}</div>}
+    </Card>
+  );
+}
+
 const templateToDraft = (template?: RecurringTaskTemplate): RecurringTaskTemplate => {
   const now = new Date().toISOString();
   return template ?? {
@@ -166,6 +193,7 @@ export function AdminPage({
   const [deleteTemplateTarget, setDeleteTemplateTarget] = useState<RecurringTaskTemplate | null>(null);
   const [pendingImport, setPendingImport] = useState<unknown | null>(null);
   const [settingsDraft, setSettingsDraft] = useState(settings);
+  const [openTaskSections, setOpenTaskSections] = useState<Record<string, boolean>>({});
   const fileRef = useRef<HTMLInputElement>(null);
   const zipRef = useRef<HTMLInputElement>(null);
   const calendarRef = useRef<HTMLInputElement>(null);
@@ -174,6 +202,10 @@ export function AdminPage({
   const completedCount = database.tasks.filter((task) => task.status === "completed").length;
   const evidenceTasks = database.tasks.filter((task) => task.evidenceRequirement !== "none");
   const snapshots = getSnapshots();
+
+  const toggleTaskSection = (key: string) => {
+    setOpenTaskSections((current) => ({ ...current, [key]: !current[key] }));
+  };
 
   const submitPassword = (event: FormEvent) => {
     event.preventDefault();
@@ -330,19 +362,24 @@ export function AdminPage({
       {tab === "tasks" && (
         <div className="space-y-6">
           <section className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <h2 className="text-xl font-black">添加单个任务</h2>
-              <form className="mt-5 space-y-5" onSubmit={submitSingle}>
+            <CollapsibleAdminCard
+              title="添加单个任务"
+              description="自己选择某一天、任务内容和重要程度。"
+              open={Boolean(openTaskSections.single)}
+              onToggle={() => toggleTaskSection("single")}
+            >
+              <form className="space-y-5" onSubmit={submitSingle}>
                 <DraftFields draft={draft} onChange={setDraft} />
                 <Button icon={<Plus size={18} />}>保存任务</Button>
               </form>
-            </Card>
-            <Card>
-              <h2 className="text-xl font-black">导入日历文件</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                支持导入 .ics 日历文件，每个日程会变成对应日期的任务；也支持 CSV：date,title,subject,priority。
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2">
+            </CollapsibleAdminCard>
+            <CollapsibleAdminCard
+              title="导入日历文件"
+              description="导入 .ics 日历文件，或 CSV：date,title,subject,priority。"
+              open={Boolean(openTaskSections.calendar)}
+              onToggle={() => toggleTaskSection("calendar")}
+            >
+              <div className="flex flex-wrap gap-2">
                 <Button icon={<CalendarPlus size={18} />} onClick={() => calendarRef.current?.click()}>导入日历文件</Button>
                 <input ref={calendarRef} type="file" accept=".ics,text/calendar,.csv,text/csv" className="hidden" onChange={handleCalendarImport} />
               </div>
@@ -354,10 +391,15 @@ export function AdminPage({
                 </div>
                 <Button className="mt-5" variant="secondary" icon={<Copy size={18} />} onClick={() => notify("success", `已复制 ${onCopyDay(copyFrom, copyTo)} 个任务。`)}>复制任务</Button>
               </div>
-            </Card>
+            </CollapsibleAdminCard>
           </section>
-          <Card>
-            <div className="mb-5 flex items-center justify-between gap-3"><h2 className="text-xl font-black">批量添加任务</h2><Button variant="secondary" icon={<Plus size={18} />} onClick={() => setBatchRows([...batchRows, emptyDraft(selectedDate)])}>增加一行</Button></div>
+          <CollapsibleAdminCard
+            title="批量添加任务"
+            description="一次添加多条任务。"
+            open={Boolean(openTaskSections.batch)}
+            onToggle={() => toggleTaskSection("batch")}
+          >
+            <div className="mb-5 flex items-center justify-end gap-3"><Button variant="secondary" icon={<Plus size={18} />} onClick={() => setBatchRows([...batchRows, emptyDraft(selectedDate)])}>增加一行</Button></div>
             <div className="space-y-3">
               {batchRows.map((row, index) => (
                 <div key={index} className="grid gap-3 rounded-2xl bg-slate-50 p-3 sm:grid-cols-[1fr_1fr_2fr_1fr_1fr_auto] dark:bg-slate-800">
@@ -371,9 +413,14 @@ export function AdminPage({
               ))}
             </div>
             <Button className="mt-5" icon={<Save size={18} />} onClick={submitBatch}>批量保存</Button>
-          </Card>
-          <Card>
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-xl font-black">按日期查看任务</h2><input className={`${inputClass} sm:max-w-56`} type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} /></div>
+          </CollapsibleAdminCard>
+          <CollapsibleAdminCard
+            title="按日期查看任务"
+            description="查看、编辑或删除某一天的任务。"
+            open={Boolean(openTaskSections.byDate)}
+            onToggle={() => toggleTaskSection("byDate")}
+          >
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end"><input className={`${inputClass} sm:max-w-56`} type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} /></div>
             <div className="space-y-3">
               {selectedTasks.map((task) => (
                 <div key={task.id} className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-950">
@@ -383,7 +430,7 @@ export function AdminPage({
               ))}
               {selectedTasks.length === 0 && <div className="rounded-2xl bg-slate-50 p-6 text-center text-slate-500 dark:bg-slate-800">这一天还没有任务。</div>}
             </div>
-          </Card>
+          </CollapsibleAdminCard>
         </div>
       )}
 
