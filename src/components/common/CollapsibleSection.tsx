@@ -66,7 +66,7 @@ export function CollapsibleSection({
   }, [expanded, id, persistState]);
 
   return (
-    <section className={`rounded-[12px] border border-[#E9EBEF] bg-white dark:border-slate-800 dark:bg-slate-900 ${className}`}>
+    <section className={`rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] ${className}`}>
       <button
         type="button"
         className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3 text-left"
@@ -75,16 +75,16 @@ export function CollapsibleSection({
         onClick={() => setExpanded((value) => !value)}
       >
         <span className="min-w-0">
-          <span className="block text-[15px] font-semibold text-[#1F2329] dark:text-slate-100">
+          <span className="block text-[15px] font-semibold text-[var(--color-text)]">
             {title}
-            {typeof count === "number" ? <span className="ml-2 text-[#6B7280]">{count}</span> : null}
+            {typeof count === "number" ? <span className="ml-2 text-[var(--color-text-secondary)]">{count}</span> : null}
           </span>
-          {subtitle ? <span className="mt-0.5 block truncate text-xs text-[#6B7280] dark:text-slate-400">{subtitle}</span> : null}
+          {subtitle ? <span className="mt-0.5 block truncate text-xs text-[var(--color-text-secondary)]">{subtitle}</span> : null}
         </span>
-        <ChevronDown className={`shrink-0 text-[#9CA3AF] transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} size={20} />
+        <ChevronDown className={`shrink-0 text-[var(--color-text-muted)] transition-transform duration-[var(--motion-fast)] ${expanded ? "rotate-180" : ""}`} size={20} />
       </button>
       {expanded && (
-        <div id={contentId} className="animate-[fadeIn_180ms_ease-out] border-t border-[#E9EBEF] px-4 py-3 dark:border-slate-800">
+        <div id={contentId} className="animate-[fadeIn_180ms_ease-out] border-t border-[var(--color-border)] px-4 py-3">
           {children}
         </div>
       )}

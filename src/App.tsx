@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Import, Plus, Sparkles } from "lucide-react";
+import { Import, Plus, Sparkles } from "lucide-react";
 import { AppSettings, DailyReflection, StudyTask, TaskEvidence } from "./types/task";
 import { AppShell, PageKey } from "./components/layout/AppShell";
 import { Button } from "./components/common/Button";
@@ -12,7 +12,7 @@ import { StatisticsPage } from "./pages/StatisticsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { useTasks } from "./hooks/useTasks";
 import { createDemoTasks } from "./data/demoTasks";
-import { PUBLISHED_TASKS_VERSION, publishedTasks } from "./data/publishedTasks";
+import { PUBLISHED_TASKS_VERSION } from "./data/publishedTasks";
 import { getTodayString } from "./utils/date";
 import { summarizeDay } from "./utils/statistics";
 
@@ -28,6 +28,7 @@ export default function App() {
     addTasks,
     updateTask,
     deleteTask,
+    restoreTask,
     copyDay,
     replaceTasks,
     mergeTasks,
@@ -44,21 +45,25 @@ export default function App() {
   const [completeAfterEvidence, setCompleteAfterEvidence] = useState(false);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", settings.darkMode);
-  }, [settings.darkMode]);
+    const applyTheme = () => {
+      const systemDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
+      const mode = settings.themeMode ?? (settings.darkMode ? "dark" : "light");
+      document.documentElement.classList.toggle("dark", mode === "dark" || (mode === "system" && systemDark));
+      document.documentElement.dataset.themeColor = settings.themeColor ?? "blueviolet";
+    };
+    applyTheme();
+    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
+    media?.addEventListener("change", applyTheme);
+    return () => media?.removeEventListener("change", applyTheme);
+  }, [settings.darkMode, settings.themeColor, settings.themeMode]);
 
   useEffect(() => {
     if (settings.publishedTasksVersion === PUBLISHED_TASKS_VERSION) return;
-    const taskMap = new Map(tasks.map((task) => [task.id, task]));
-    publishedTasks.forEach((task) => {
-      if (!taskMap.has(task.id)) taskMap.set(task.id, task);
-    });
     replaceDatabase({
       ...database,
-      tasks: Array.from(taskMap.values()),
       settings: { ...settings, onboarded: true, publishedTasksVersion: PUBLISHED_TASKS_VERSION },
     });
-  }, [database, replaceDatabase, settings, tasks]);
+  }, [database, replaceDatabase, settings]);
 
   useEffect(() => {
     if (database.recurringTemplates.length === 0) return;
@@ -67,9 +72,9 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [database.recurringTemplates.length]);
 
-  const notify = (type: ToastType, message: string) => {
+  const notify = (type: ToastType, message: string, action?: Pick<ToastMessage, "actionLabel" | "onAction">) => {
     const id = crypto.randomUUID();
-    setToasts((current) => [...current, { id, type, message }]);
+    setToasts((current) => [...current, { id, type, message, ...action }]);
     window.setTimeout(() => setToasts((current) => current.filter((toast) => toast.id !== id)), 3000);
   };
 
@@ -120,6 +125,17 @@ export default function App() {
   const handleUndo = (task: StudyTask) => {
     updateTask(task.id, { status: task.date < getTodayString() ? "overdue" : "pending", completedAt: undefined, completed: false });
     notify("info", "已撤销完成。");
+  };
+
+  const handleDelete = (task: StudyTask) => {
+    deleteTask(task.id);
+    notify("info", "任务已删除。", {
+      actionLabel: "撤销",
+      onAction: () => {
+        restoreTask(task);
+        notify("success", "已恢复任务。");
+      },
+    });
   };
 
   const handlePostpone = (task: StudyTask, toDate: string, reason?: string, copy = false) => {
@@ -182,7 +198,7 @@ export default function App() {
           reflections={reflections}
           onAddTask={addTask}
           onUpdateTask={(task, patch) => { updateTask(task.id, patch); notify("success", "任务已更新。"); }}
-          onDeleteTask={(task) => { if (window.confirm(`确定删除“${task.title}”吗？`)) { deleteTask(task.id); notify("success", "任务已删除。"); } }}
+          onDeleteTask={handleDelete}
           onComplete={handleComplete}
           onUndo={handleUndo}
           onEvidence={(task) => { setCompleteAfterEvidence(false); setEvidenceTarget(task); }}
@@ -194,8 +210,19 @@ export default function App() {
           notify={notify}
         />
       )}
-      {page === "calendar" && <CalendarPage tasks={tasks} settings={settings} reflections={reflections} onAddTask={addTask} />}
-      {page === "statistics" && <StatisticsPage tasks={tasks} reflections={reflections} />}
+      {page === "calendar" && (
+        <CalendarPage
+          tasks={tasks}
+          settings={settings}
+          reflections={reflections}
+          onAddTask={addTask}
+          onUpdateTask={(task, patch) => { updateTask(task.id, patch); notify("success", "任务已更新。"); }}
+          onDeleteTask={handleDelete}
+          onComplete={handleComplete}
+          onUndo={handleUndo}
+        />
+      )}
+      {page === "statistics" && <StatisticsPage tasks={tasks} reflections={reflections} onGoDate={() => setPage("calendar")} />}
       {page === "profile" && (
         <SettingsPage
           database={database}

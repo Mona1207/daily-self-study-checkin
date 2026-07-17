@@ -32,6 +32,23 @@ export const downloadJson = (data: unknown, filename: string): void => {
   URL.revokeObjectURL(url);
 };
 
+export const downloadCsv = (tasks: StudyTask[], filename: string): void => {
+  const headers = ["id", "date", "title", "subject", "priority", "status", "startTime", "dueTime", "completedAt", "description"];
+  const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+  const rows = tasks.map((task) =>
+    headers
+      .map((key) => escape((task as unknown as Record<string, unknown>)[key]))
+      .join(","),
+  );
+  const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
 export const readJsonFile = async (file: File): Promise<unknown> => {
   const text = await file.text();
   try {

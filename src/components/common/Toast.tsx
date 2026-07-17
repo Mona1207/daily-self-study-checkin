@@ -7,6 +7,8 @@ export interface ToastMessage {
   id: string;
   type: ToastType;
   message: string;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 interface ToastProps {
@@ -27,15 +29,20 @@ const icons: Record<ToastType, ReactElement> = {
 
 export function ToastContainer({ toasts }: ToastProps) {
   return (
-    <div className="fixed right-4 top-4 z-[60] flex w-[calc(100%-2rem)] max-w-sm flex-col gap-3">
+    <div className="fixed right-4 top-[calc(env(safe-area-inset-top)+12px)] z-[60] flex w-[calc(100%-2rem)] max-w-sm flex-col gap-3">
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`animate-float-up rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg ${styles[toast.type]}`}
+          className={`animate-float-up rounded-[var(--radius-lg)] border px-4 py-3 text-sm font-medium shadow-lg ${styles[toast.type]}`}
         >
           <div className="flex items-center gap-2">
             {icons[toast.type]}
-            <span>{toast.message}</span>
+            <span className="min-w-0 flex-1">{toast.message}</span>
+            {toast.actionLabel && toast.onAction ? (
+              <button className="shrink-0 rounded-[8px] bg-white/70 px-2 py-1 text-xs font-semibold" onClick={toast.onAction}>
+                {toast.actionLabel}
+              </button>
+            ) : null}
           </div>
         </div>
       ))}

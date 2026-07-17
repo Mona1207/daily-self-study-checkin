@@ -18,14 +18,14 @@ const navItems: Array<{ key: PageKey; label: string; icon: typeof CheckSquare }>
   { key: "profile", label: "我的", icon: Settings },
 ];
 
-export function AppShell({ activePage, onNavigate, children }: AppShellProps) {
+export function AppShell({ activePage, onNavigate, settings, children }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-[#F6F7F9] text-[#1F2329] dark:bg-slate-950 dark:text-slate-100">
-      <main className="min-h-screen pb-24">
-        <div className="mx-auto w-full max-w-3xl px-4 py-4 sm:py-6">{children}</div>
+    <div className="min-h-screen bg-[var(--color-page)] text-[var(--color-text)]" data-density={settings.layoutDensity ?? (settings.compactLayout ? "compact" : "standard")}>
+      <main className="min-h-screen pb-[calc(var(--nav-height)+env(safe-area-inset-bottom)+20px)] pt-[env(safe-area-inset-top)]">
+        <div className="mx-auto w-full max-w-3xl px-[var(--page-x)] py-4 sm:py-6">{children}</div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#E9EBEF] bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur">
         <div className="mx-auto grid max-w-3xl grid-cols-4 gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -34,11 +34,13 @@ export function AppShell({ activePage, onNavigate, children }: AppShellProps) {
               <button
                 key={item.key}
                 onClick={() => onNavigate(item.key)}
-                className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-[10px] text-xs font-medium transition ${
+                className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-[var(--radius-sm)] text-xs font-medium transition duration-[var(--motion-fast)] ${
                   active
-                    ? "bg-[#EEF2FF] text-[#4F6EF7] dark:bg-indigo-500/15 dark:text-indigo-200"
-                    : "text-[#6B7280] hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                    ? "bg-[var(--color-brand-soft)] text-[var(--color-brand)]"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"
                 }`}
+                aria-current={active ? "page" : undefined}
+                aria-label={`切换到${item.label}`}
               >
                 <Icon size={20} />
                 <span>{item.label}</span>

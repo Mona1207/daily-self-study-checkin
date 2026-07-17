@@ -33,7 +33,8 @@ import { CollapsibleSection, resetCollapsiblePreferences } from "../components/c
 import { AppUpdateCard } from "../components/update/AppUpdateCard";
 import { exportFullBackupZip, readFullBackupZip, restoreBackupImages } from "../utils/backup";
 import { getTodayString } from "../utils/date";
-import { buildExportData, downloadJson, readJsonFile } from "../utils/importExport";
+import { buildExportData, downloadCsv, downloadJson, readJsonFile } from "../utils/importExport";
+import { describeNotificationPermission, getNotificationPermission, requestNotificationPermission } from "../utils/notification";
 import { recurrenceLabel } from "../utils/recurrence";
 import { createEmptyDatabase, importDatabase } from "../utils/storage";
 import { APP_VERSION, APP_VERSION_CODE } from "../utils/appVersion";
@@ -64,6 +65,8 @@ const makeCategory = (name: string, color: string, order: number): TaskCategory 
   createdAt: new Date().toISOString(),
 });
 
+const categoryColors = ["#526DF6", "#2698EA", "#18A999", "#22B983", "#F59E42", "#EF5B5B", "#7C5CF6", "#8A94A6"];
+
 export function SettingsPage({
   database,
   settings,
@@ -77,7 +80,8 @@ export function SettingsPage({
 }: SettingsPageProps) {
   const [panel, setPanel] = useState<Panel | null>(null);
   const [categoryName, setCategoryName] = useState("");
-  const [categoryColor, setCategoryColor] = useState("#E8EEFF");
+  const [categoryColor, setCategoryColor] = useState("#526DF6");
+  const [importMode, setImportMode] = useState<"merge" | "replace">("merge");
   const [templateOpen, setTemplateOpen] = useState(false);
   const [templateDraft, setTemplateDraft] = useState({
     title: "",
@@ -149,6 +153,8 @@ export function SettingsPage({
     if (!file) return;
     try {
       const data = await readJsonFile(file);
+      const confirmText = mode === "replace" ? "导入会覆盖当前数据，并先创建安全快照。确认继续吗？" : "导入会合并任务，并先创建安全快照。确认继续吗？";
+      if (!window.confirm(confirmText)) return;
       const result = importDatabase(data, mode);
       onReplaceDatabase(result.database);
       notify("success", mode === "replace" ? "数据已恢复。" : `已导入 ${result.imported} 个任务。`);
@@ -182,9 +188,13 @@ export function SettingsPage({
   const renderMain = () => (
     <div className="space-y-6">
       <div>
-        <p className="text-sm font-semibold text-[#4F6EF7]">今日清单</p>
-        <h1 className="mt-1 text-[22px] font-semibold">我的</h1>
-        <p className="mt-2 text-sm text-[#6B7280]">管理分类、提醒、外观和本地数据。</p>
+        <p className="text-sm font-semibold text-[var(--color-brand)]">今日清单</p>
+        <h1 className="mt-1 text-[28px] font-bold">我的</h1>
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">管理分类、提醒、外观和本地数据。</p>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Card className="p-3 shadow-none"><div className="text-2xl font-semibold">{tasks.filter((task) => task.status === "completed").length}</div><div className="mt-1 text-xs text-[var(--color-text-secondary)]">累计完成</div></Card>
+        <Card className="p-3 shadow-none"><div className="text-2xl font-semibold">{new Set(tasks.map((task) => task.date)).size}</div><div className="mt-1 text-xs text-[var(--color-text-secondary)]">使用天数</div></Card>
       </div>
       <div className="space-y-3">
         {[
@@ -194,11 +204,11 @@ export function SettingsPage({
           { key: "data" as const, icon: <Database size={20} />, title: "数据", desc: "导入、导出与备份" },
           { key: "about" as const, icon: <Settings size={20} />, title: "其他", desc: "隐私说明、使用帮助、关于 App" },
         ].map((item) => (
-          <button key={item.key} className="flex w-full items-center gap-4 rounded-[12px] border border-[#E9EBEF] bg-white p-4 text-left dark:border-slate-800 dark:bg-slate-900" onClick={() => setPanel(item.key)}>
-            <span className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[#F6F7F9] text-[#4F6EF7] dark:bg-slate-800">{item.icon}</span>
+          <button key={item.key} className="flex w-full items-center gap-4 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-left" onClick={() => setPanel(item.key)}>
+            <span className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[var(--color-brand-soft)] text-[var(--color-brand)]">{item.icon}</span>
             <span className="min-w-0 flex-1">
-              <span className="block font-semibold text-[#1F2329] dark:text-slate-100">{item.title}</span>
-              <span className="mt-1 block text-sm text-[#6B7280]">{item.desc}</span>
+              <span className="block font-semibold text-[var(--color-text)]">{item.title}</span>
+              <span className="mt-1 block text-sm text-[var(--color-text-secondary)]">{item.desc}</span>
             </span>
             <ChevronRight className="text-[#9CA3AF]" size={20} />
           </button>
@@ -209,7 +219,7 @@ export function SettingsPage({
 
   const renderHeader = (title: string) => (
     <div className="flex items-center gap-3">
-      <button className="flex h-11 w-11 items-center justify-center rounded-[10px] border border-[#E9EBEF] bg-white dark:border-slate-800 dark:bg-slate-900" onClick={() => setPanel(null)} aria-label="返回">
+      <button className="flex h-11 w-11 items-center justify-center rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)]" onClick={() => setPanel(null)} aria-label="返回">
         <ArrowLeft size={20} />
       </button>
       <h1 className="text-[22px] font-semibold">{title}</h1>
@@ -221,17 +231,35 @@ export function SettingsPage({
       {renderHeader("任务设置")}
       <CollapsibleSection id="settings-categories" title="分类管理" count={categories.length} defaultExpanded>
         <h2 className="text-base font-semibold">分类管理</h2>
-        <form className="mt-4 grid gap-3 sm:grid-cols-[1fr_120px_auto]" onSubmit={addCategory}>
+        <form className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]" onSubmit={addCategory}>
           <input className={inputClass} value={categoryName} onChange={(event) => setCategoryName(event.target.value)} placeholder="新分类名称" />
-          <input className={inputClass} value={categoryColor} onChange={(event) => setCategoryColor(event.target.value)} placeholder="#E8EEFF" />
           <Button icon={<Plus size={18} />}>添加</Button>
         </form>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {categoryColors.map((color) => (
+            <button key={color} className={`h-8 w-8 rounded-full ring-2 ${categoryColor === color ? "ring-[var(--color-brand)]" : "ring-transparent"}`} style={{ backgroundColor: color }} onClick={() => setCategoryColor(color)} aria-label={`选择分类颜色 ${color}`} />
+          ))}
+        </div>
         <div className="mt-4 space-y-2">
           {categories.map((category) => (
-            <div key={category.id} className="flex items-center gap-3 rounded-[10px] bg-[#F6F7F9] p-3 dark:bg-slate-800">
+            <div key={category.id} className={`flex items-center gap-3 rounded-[10px] bg-[var(--color-surface-muted)] p-3 ${category.hidden ? "opacity-55" : ""}`}>
               <span className="h-3 w-3 rounded-full" style={{ backgroundColor: category.color ?? "#E8EEFF" }} />
               <input className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none" value={category.name} onChange={(event) => saveCategories(categories.map((item) => (item.id === category.id ? { ...item, name: event.target.value } : item)))} />
-              <button className="flex h-10 w-10 items-center justify-center rounded-[10px] text-[#D9655B] hover:bg-white dark:hover:bg-slate-900" onClick={() => saveCategories(categories.filter((item) => item.id !== category.id))} aria-label="删除分类">
+              <button className="min-h-10 rounded-[10px] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]" onClick={() => saveCategories(categories.map((item) => (item.id === category.id ? { ...item, hidden: !item.hidden } : item)))}>{category.hidden ? "显示" : "隐藏"}</button>
+              <button className="flex h-10 w-10 items-center justify-center rounded-[10px] text-[var(--color-danger)] hover:bg-[var(--color-surface)]" onClick={() => {
+                const mode = window.prompt("删除分类会影响相关任务。输入 1 移动到“其他”，输入 2 仅移除分类，其他内容取消。");
+                if (mode !== "1" && mode !== "2") return;
+                saveCategories(categories.filter((item) => item.id !== category.id));
+                onReplaceDatabase({
+                  ...database,
+                  tasks: database.tasks.map((task) =>
+                    task.subject === category.name || task.categoryId === category.id
+                      ? { ...task, subject: mode === "1" ? "其他" : task.subject, categoryId: undefined, updatedAt: new Date().toISOString() }
+                      : task,
+                  ),
+                });
+                notify("success", mode === "1" ? "分类已删除，请在任务编辑中确认相关任务分类。" : "分类已移除。");
+              }} aria-label="删除分类">
                 <Trash2 size={17} />
               </button>
             </div>
@@ -292,15 +320,18 @@ export function SettingsPage({
   const renderRemindersPanel = () => (
     <div className="space-y-5">
       {renderHeader("提醒设置")}
-      <p className="text-sm leading-6 text-[#6B7280]">提醒会尽量使用系统本地通知。首次开启时再申请权限，不会在首次打开 App 时打扰你。</p>
-      {["每日提醒", "任务提醒", "逾期提醒", "每日回顾提醒", "备份提醒"].map((label, index) => (
-        <CollapsibleSection key={label} id={`settings-reminder-${index}`} title={label} defaultExpanded={index === 0}>
-          <label className="flex items-center justify-between rounded-[12px] bg-[#F6F7F9] p-4 text-sm font-medium dark:bg-slate-800">
-            启用{label}
-            <input type="checkbox" onChange={() => notify("info", "提醒偏好已记录，系统通知会在支持的平台上生效。")} />
-          </label>
-        </CollapsibleSection>
-      ))}
+      <CollapsibleSection id="settings-reminder-permission" title="通知权限" subtitle={describeNotificationPermission(settings.reminderPreferences?.permissionStatus ?? getNotificationPermission())} defaultExpanded>
+        <p className="text-sm leading-6 text-[var(--color-text-secondary)]">提醒会尽量使用系统本地通知；Web/PWA 环境受浏览器和系统权限限制。</p>
+        <Button className="mt-3" variant="secondary" icon={<Bell size={18} />} onClick={async () => {
+          const status = await requestNotificationPermission();
+          updateSetting({ reminderPreferences: { ...(settings.reminderPreferences ?? { defaultOffsetMinutes: 15, overdueEnabled: true, dailySummaryEnabled: false, permissionStatus: status }), permissionStatus: status } });
+        }}>检查并申请权限</Button>
+      </CollapsibleSection>
+      <CollapsibleSection id="settings-reminder-default" title="默认提醒" defaultExpanded>
+        <label className="block text-sm font-medium">默认提前时间<select className={`${inputClass} mt-2`} value={settings.reminderPreferences?.defaultOffsetMinutes ?? 15} onChange={(event) => updateSetting({ reminderPreferences: { ...(settings.reminderPreferences ?? { overdueEnabled: true, dailySummaryEnabled: false, permissionStatus: getNotificationPermission() }), defaultOffsetMinutes: Number(event.target.value) } })}><option value="5">5分钟</option><option value="15">15分钟</option><option value="30">30分钟</option><option value="60">1小时</option><option value="1440">1天</option></select></label>
+        <label className="mt-3 flex items-center justify-between text-sm font-medium">提醒逾期任务<input type="checkbox" checked={settings.reminderPreferences?.overdueEnabled ?? true} onChange={(event) => updateSetting({ reminderPreferences: { ...(settings.reminderPreferences ?? { defaultOffsetMinutes: 15, dailySummaryEnabled: false, permissionStatus: getNotificationPermission() }), overdueEnabled: event.target.checked } })} /></label>
+        <label className="mt-3 flex items-center justify-between text-sm font-medium">每日任务摘要<input type="checkbox" checked={settings.reminderPreferences?.dailySummaryEnabled ?? false} onChange={(event) => updateSetting({ reminderPreferences: { ...(settings.reminderPreferences ?? { defaultOffsetMinutes: 15, overdueEnabled: true, permissionStatus: getNotificationPermission() }), dailySummaryEnabled: event.target.checked } })} /></label>
+      </CollapsibleSection>
     </div>
   );
 
@@ -308,21 +339,31 @@ export function SettingsPage({
     <div className="space-y-5">
       {renderHeader("外观设置")}
       <CollapsibleSection id="settings-theme" title="主题模式" defaultExpanded>
-        <label className="flex items-center justify-between text-sm font-medium">
-          深色模式
-          <input type="checkbox" checked={settings.darkMode} onChange={(event) => updateSetting({ darkMode: event.target.checked })} />
-        </label>
+        <div className="grid grid-cols-3 gap-2">
+          {(["light", "dark", "system"] as const).map((mode) => <button key={mode} className={`min-h-10 rounded-[10px] text-sm font-semibold ${settings.themeMode === mode ? "bg-[var(--color-brand)] text-white" : "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]"}`} onClick={() => updateSetting({ themeMode: mode, darkMode: mode === "dark" })}>{mode === "light" ? "浅色" : mode === "dark" ? "深色" : "跟随系统"}</button>)}
+        </div>
+        <div className="mt-4 flex gap-2">
+          {(["blueviolet", "sky", "teal", "orange"] as const).map((color) => <button key={color} className={`min-h-10 flex-1 rounded-[10px] text-sm font-semibold ${settings.themeColor === color ? "bg-[var(--color-brand)] text-white" : "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]"}`} onClick={() => updateSetting({ themeColor: color })}>{color === "blueviolet" ? "蓝紫" : color === "sky" ? "天蓝" : color === "teal" ? "青绿" : "橙色"}</button>)}
+        </div>
       </CollapsibleSection>
       <CollapsibleSection id="settings-animation" title="动画效果" defaultExpanded={false}>
         <label className="flex items-center justify-between text-sm font-medium">
           动画开关
           <input type="checkbox" checked={settings.animationsEnabled} onChange={(event) => updateSetting({ animationsEnabled: event.target.checked })} />
         </label>
+        <label className="mt-3 flex items-center justify-between text-sm font-medium">
+          触感反馈
+          <input type="checkbox" checked={settings.hapticsEnabled ?? true} onChange={(event) => updateSetting({ hapticsEnabled: event.target.checked })} />
+        </label>
       </CollapsibleSection>
       <CollapsibleSection id="settings-layout" title="布局偏好" defaultExpanded={false}>
         <label className="flex items-center justify-between text-sm font-medium">
           显示预计时间
           <input type="checkbox" checked={settings.showEstimatedTime} onChange={(event) => updateSetting({ showEstimatedTime: event.target.checked })} />
+        </label>
+        <label className="mt-3 flex items-center justify-between text-sm font-medium">
+          紧凑布局
+          <input type="checkbox" checked={settings.layoutDensity === "compact" || settings.compactLayout} onChange={(event) => updateSetting({ layoutDensity: event.target.checked ? "compact" : "standard", compactLayout: event.target.checked })} />
         </label>
         <Button className="mt-4" variant="secondary" onClick={() => { resetCollapsiblePreferences(); notify("success", "已恢复默认布局，重新打开页面后生效。"); }}>恢复默认布局</Button>
       </CollapsibleSection>
@@ -332,17 +373,22 @@ export function SettingsPage({
   const renderDataPanel = () => (
     <div className="space-y-5">
       {renderHeader("数据管理")}
-      <input ref={jsonImportRef} type="file" accept=".json,application/json" className="hidden" onChange={(event) => handleJsonImport(event, "merge")} />
+      <input ref={jsonImportRef} type="file" accept=".json,application/json" className="hidden" onChange={(event) => handleJsonImport(event, importMode)} />
       <input ref={zipImportRef} type="file" accept=".zip,application/zip" className="hidden" onChange={handleZipImport} />
       <CollapsibleSection id="settings-backup" title="备份与恢复" defaultExpanded>
         <p className="text-sm leading-6 text-[#6B7280]">所有数据默认只保存在当前设备。卸载 App 或清除数据可能导致记录丢失，请定期导出备份。</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Button variant="secondary" icon={<Download size={18} />} onClick={exportJson}>导出全部数据</Button>
+          <Button variant="secondary" icon={<Download size={18} />} onClick={() => { downloadCsv(tasks, `today-list-tasks-${getTodayString()}.csv`); notify("success", "CSV 已导出。"); }}>导出任务 CSV</Button>
           <Button variant="secondary" icon={<FileArchive size={18} />} onClick={() => exportFullBackupZip(database, `today-list-backup-${getTodayString()}.zip`).then(() => notify("success", "完整备份已导出。")).catch((error) => notify("error", error.message))}>导出完整备份</Button>
           <Button variant="secondary" icon={<FileJson size={18} />} onClick={() => zipImportRef.current?.click()}>恢复备份</Button>
         </div>
       </CollapsibleSection>
       <CollapsibleSection id="settings-import" title="数据导入" defaultExpanded={false}>
+        <div className="mb-3 grid grid-cols-2 gap-2">
+          <button className={`min-h-10 rounded-[10px] text-sm font-semibold ${importMode === "merge" ? "bg-[var(--color-brand)] text-white" : "bg-[var(--color-surface-muted)]"}`} onClick={() => setImportMode("merge")}>合并</button>
+          <button className={`min-h-10 rounded-[10px] text-sm font-semibold ${importMode === "replace" ? "bg-[var(--color-brand)] text-white" : "bg-[var(--color-surface-muted)]"}`} onClick={() => setImportMode("replace")}>覆盖</button>
+        </div>
         <Button variant="secondary" icon={<Upload size={18} />} onClick={() => jsonImportRef.current?.click()}>导入 JSON 数据</Button>
       </CollapsibleSection>
       <CollapsibleSection id="settings-storage" title="存储占用" defaultExpanded={false}>

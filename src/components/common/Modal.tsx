@@ -13,19 +13,19 @@ export function Modal({ title, open, onClose, children }: ModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       onMouseDown={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900"
+        className="max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-t-[var(--radius-xl)] bg-[var(--color-surface)] p-5 pb-[max(20px,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[var(--radius-xl)]"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h2>
+          <h2 className="text-lg font-bold text-[var(--color-text)]">{title}</h2>
           <button
-            className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="rounded-full p-2 text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
             onClick={onClose}
             aria-label="关闭弹窗"
           >

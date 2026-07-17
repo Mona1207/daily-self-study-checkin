@@ -1,5 +1,5 @@
 export type TaskPriority = "none" | "low" | "medium" | "high";
-export type Priority = "low" | "medium" | "high";
+export type Priority = TaskPriority;
 
 export type Subject = "工作" | "学习" | "生活" | "运动" | "阅读" | "健康" | "购物" | "个人" | "其他" | "语文" | "数学" | "英语" | "物理" | "化学" | "地理" | "历史" | "生物" | "政治";
 
@@ -22,7 +22,9 @@ export interface StudyTask {
   id: string;
   date: string;
   startTime?: string;
+  endTime?: string;
   dueTime?: string;
+  allDay?: boolean;
   originalScheduledDate?: string;
   originalDate?: string;
   title: string;
@@ -32,6 +34,11 @@ export interface StudyTask {
   estimatedMinutes?: number;
   priority: Priority;
   status: TaskStatus;
+  reminder?: TaskReminder;
+  repeatRule?: RecurrenceRule;
+  subtasks?: Subtask[];
+  sortOrder?: number;
+  archived?: boolean;
   evidenceRequirement: EvidenceRequirement;
   evidenceId?: string;
   recurringTemplateId?: string;
@@ -63,6 +70,7 @@ export interface TaskCategory {
   icon?: string;
   color?: string;
   order: number;
+  hidden?: boolean;
   createdAt: string;
 }
 
@@ -115,6 +123,7 @@ export interface DailyReflection {
   id: string;
   date: string;
   mood: DailyMood;
+  energy?: number;
   bestPart?: string;
   hardestTask?: string;
   learned?: string;
@@ -124,14 +133,39 @@ export interface DailyReflection {
   updatedAt: string;
 }
 
+export interface TaskReminder {
+  enabled: boolean;
+  type: "start" | "due";
+  offsetMinutes: number;
+  customAt?: string;
+}
+
+export type ThemeMode = "light" | "dark" | "system";
+export type ThemeColor = "blueviolet" | "sky" | "teal" | "orange";
+export type LayoutDensity = "standard" | "compact";
+
+export interface ReminderPreferences {
+  defaultOffsetMinutes: number;
+  overdueEnabled: boolean;
+  dailySummaryEnabled: boolean;
+  permissionStatus: NotificationPermission | "unsupported";
+}
+
 export interface AppSettings {
   studentName: string;
   userName?: string;
   adminPasswordHash: string;
   dailyTarget: number;
   animationsEnabled: boolean;
+  hapticsEnabled?: boolean;
+  compactLayout?: boolean;
+  layoutDensity?: LayoutDensity;
   showEstimatedTime: boolean;
   darkMode: boolean;
+  themeMode?: ThemeMode;
+  themeColor?: ThemeColor;
+  weekStartsOn?: 0 | 1;
+  reminderPreferences?: ReminderPreferences;
   defaultRecurringGenerateDays: number;
   requireAdminPasswordEverySession: boolean;
   lastBackupAt?: string;
@@ -179,12 +213,13 @@ export const DEFAULT_CATEGORIES: TaskCategory[] = SUBJECTS.map((name, index) => 
   id: `category-${name}`,
   name,
   icon: ["briefcase", "book", "home", "activity", "bookmark", "heart", "shopping-bag", "user", "circle"][index],
-  color: ["#E8EEFF", "#EDF7F1", "#F2F4F7", "#FFF2DF", "#F0ECFF", "#E8F6F4", "#FFF0F0", "#EEF2F7", "#F4F4F5"][index],
+  color: ["#526DF6", "#22B983", "#8A94A6", "#F59E42", "#7C5CF6", "#18A999", "#EF5B5B", "#5D7AEF", "#A0A7B5"][index],
   order: index,
   createdAt: "2026-07-16T00:00:00.000+08:00",
 }));
 
 export const PRIORITY_LABEL: Record<Priority, string> = {
+  none: "无",
   low: "低",
   medium: "中",
   high: "高",

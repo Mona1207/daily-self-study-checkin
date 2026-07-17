@@ -90,6 +90,16 @@ export const useTasks = () => {
     [updateDatabase],
   );
 
+  const restoreTask = useCallback(
+    (task: StudyTask) => {
+      updateDatabase((db) => {
+        if (db.tasks.some((item) => item.id === task.id)) return db;
+        return { ...db, tasks: [...db.tasks, normalizeTask(task)] };
+      });
+    },
+    [updateDatabase],
+  );
+
   const mergeTasks = useCallback(
     (incoming: StudyTask[]) => {
       const map = new Map(database.tasks.map((task) => [task.id, task]));
@@ -194,6 +204,7 @@ export const useTasks = () => {
       addTasks,
       updateTask,
       deleteTask,
+      restoreTask,
       replaceTasks,
       mergeTasks,
       copyDay,
@@ -211,6 +222,7 @@ export const useTasks = () => {
       copyDay,
       database,
       deleteTask,
+      restoreTask,
       deleteTemplate,
       generateRecurringTasks,
       mergeTasks,

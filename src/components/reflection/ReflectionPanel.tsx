@@ -24,6 +24,7 @@ const makeDraft = (date: string, reflection?: DailyReflection): DailyReflection 
       id: crypto.randomUUID(),
       date,
       mood: "good",
+      energy: 3,
       notes: "",
       createdAt: now,
       updatedAt: now,
@@ -58,16 +59,16 @@ export function ReflectionPanel({ date = getTodayString(), reflections = [], emp
   return (
     <>
       <button className="block w-full text-left" onClick={openEditor}>
-        <Card className={emphasized ? "ring-2 ring-indigo-200 dark:ring-indigo-500/40" : ""}>
+        <Card className={`p-3 ${emphasized ? "ring-2 ring-indigo-200 dark:ring-indigo-500/40" : ""}`}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-500 dark:bg-indigo-500/15">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--color-brand-soft)] text-[var(--color-brand)]">
                 <BookMarked size={22} />
               </div>
               <div>
-                <h2 className="text-xl font-black">记录今天</h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {todayReflection ? `${MOOD_LABEL[todayReflection.mood]} · ${todayReflection.notes || "已记录每日回顾"}` : "点进去填写今日状态和小记"}
+                <h2 className="text-[15px] font-semibold">记录今天</h2>
+                <p className="mt-1 max-w-[220px] truncate text-sm text-[var(--color-text-secondary)] sm:max-w-none">
+                  {todayReflection ? `${MOOD_LABEL[todayReflection.mood]} · 能量 ${todayReflection.energy ?? 3}/5 · ${todayReflection.notes || "已记录每日回顾"}` : "填写状态、能量和简短小记"}
                 </p>
               </div>
             </div>
@@ -96,6 +97,14 @@ export function ReflectionPanel({ date = getTodayString(), reflections = [], emp
                 </option>
               ))}
             </select>
+          </label>
+          <label className="text-sm font-semibold">
+            今日能量：{draft.energy ?? 3}/5
+            <input className="mt-2 w-full accent-[var(--color-brand)]" type="range" min="1" max="5" value={draft.energy ?? 3} onChange={(event) => setDraft({ ...draft, energy: Number(event.target.value) })} />
+          </label>
+          <label className="text-sm font-semibold">
+            今天最满意的一件事
+            <input className={`${inputClass} mt-1`} value={draft.bestPart ?? ""} onChange={(event) => setDraft({ ...draft, bestPart: event.target.value })} placeholder="可选" />
           </label>
           <label className="text-sm font-semibold">
             其他记录

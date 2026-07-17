@@ -31,7 +31,7 @@ const asNumber = (value: unknown, fallback?: number): number | undefined => {
 
 const asBoolean = (value: unknown, fallback = false): boolean => (typeof value === "boolean" ? value : fallback);
 
-const priority = (value: unknown): Priority => (value === "low" || value === "medium" || value === "high" ? value : "medium");
+const priority = (value: unknown): Priority => (value === "none" || value === "low" || value === "medium" || value === "high" ? value : "medium");
 
 const subject = (value: unknown): Subject => {
   const text = asString(value, "其他");
@@ -59,8 +59,20 @@ export const defaultSettings = (): AppSettings => ({
   adminPasswordHash: hashPassword("123456"),
   dailyTarget: 4,
   animationsEnabled: true,
+  hapticsEnabled: true,
+  compactLayout: false,
+  layoutDensity: "standard",
   showEstimatedTime: true,
   darkMode: false,
+  themeMode: "light",
+  themeColor: "blueviolet",
+  weekStartsOn: 1,
+  reminderPreferences: {
+    defaultOffsetMinutes: 15,
+    overdueEnabled: true,
+    dailySummaryEnabled: false,
+    permissionStatus: typeof Notification === "undefined" ? "unsupported" : Notification.permission,
+  },
   defaultRecurringGenerateDays: 30,
   requireAdminPasswordEverySession: true,
   onboarded: false,
@@ -79,14 +91,45 @@ export const normalizeSettings = (raw: unknown): AppSettings => {
     adminPasswordHash: asString(raw.adminPasswordHash, legacyPassword ? hashPassword(legacyPassword) : base.adminPasswordHash),
     dailyTarget: asNumber(raw.dailyTarget ?? raw.dailyGoal, base.dailyTarget) ?? base.dailyTarget,
     animationsEnabled: asBoolean(raw.animationsEnabled ?? raw.enableAnimations, base.animationsEnabled),
+    hapticsEnabled: asBoolean(raw.hapticsEnabled, base.hapticsEnabled),
+    compactLayout: asBoolean(raw.compactLayout, base.compactLayout),
+    layoutDensity: raw.layoutDensity === "compact" ? "compact" : "standard",
     showEstimatedTime: asBoolean(raw.showEstimatedTime, base.showEstimatedTime),
     darkMode: asBoolean(raw.darkMode, base.darkMode),
+    themeMode: raw.themeMode === "dark" || raw.themeMode === "system" ? raw.themeMode : raw.darkMode === true ? "dark" : "light",
+    themeColor:
+      raw.themeColor === "sky" || raw.themeColor === "teal" || raw.themeColor === "orange" || raw.themeColor === "blueviolet"
+        ? raw.themeColor
+        : base.themeColor,
+    weekStartsOn: raw.weekStartsOn === 0 ? 0 : 1,
+    reminderPreferences: {
+      defaultOffsetMinutes:
+        isRecord(raw.reminderPreferences) && Number.isFinite(Number(raw.reminderPreferences.defaultOffsetMinutes))
+          ? Number(raw.reminderPreferences.defaultOffsetMinutes)
+          : base.reminderPreferences?.defaultOffsetMinutes ?? 15,
+      overdueEnabled: isRecord(raw.reminderPreferences) ? asBoolean(raw.reminderPreferences.overdueEnabled, true) : true,
+      dailySummaryEnabled: isRecord(raw.reminderPreferences) ? asBoolean(raw.reminderPreferences.dailySummaryEnabled, false) : false,
+      permissionStatus:
+        isRecord(raw.reminderPreferences) &&
+        (raw.reminderPreferences.permissionStatus === "granted" ||
+          raw.reminderPreferences.permissionStatus === "denied" ||
+          raw.reminderPreferences.permissionStatus === "default" ||
+          raw.reminderPreferences.permissionStatus === "unsupported")
+          ? raw.reminderPreferences.permissionStatus
+          : base.reminderPreferences?.permissionStatus ?? "unsupported",
+    },
     defaultRecurringGenerateDays: Math.max(1, asNumber(raw.defaultRecurringGenerateDays, base.defaultRecurringGenerateDays) ?? base.defaultRecurringGenerateDays),
     requireAdminPasswordEverySession: asBoolean(raw.requireAdminPasswordEverySession, base.requireAdminPasswordEverySession),
     lastBackupAt: asString(raw.lastBackupAt, undefined as unknown as string) || undefined,
     onboarded: asBoolean(raw.onboarded, base.onboarded),
     publishedTasksVersion: asString(raw.publishedTasksVersion, undefined as unknown as string) || undefined,
-    categories: Array.isArray(raw.categories) ? raw.categories as AppSettings["categories"] : base.categories,
+    categories: Array.isArray(raw.categories)
+      ? (raw.categories as AppSettings["categories"])?.map((category, index) => ({
+          ...category,
+          order: Number.isFinite(category.order) ? category.order : index,
+          hidden: Boolean(category.hidden),
+        }))
+      : base.categories,
   };
 };
 
@@ -99,7 +142,9 @@ export const normalizeTask = (raw: unknown): StudyTask => {
     id: asString(item.id, crypto.randomUUID()),
     date,
     startTime: asString(item.startTime, "") || undefined,
+    endTime: asString(item.endTime, "") || undefined,
     dueTime: asString(item.dueTime, "") || undefined,
+    allDay: asBoolean(item.allDay, !asString(item.startTime, "") && !asString(item.dueTime, "") && !asString(item.endTime, "")),
     originalScheduledDate: asString(item.originalScheduledDate, "") || undefined,
     originalDate: asString(item.originalDate ?? item.originalScheduledDate, "") || undefined,
     title: asString(item.title, "未命名任务").trim() || "未命名任务",
@@ -109,6 +154,27 @@ export const normalizeTask = (raw: unknown): StudyTask => {
     estimatedMinutes: asNumber(item.estimatedMinutes),
     priority: priority(item.priority),
     status: status(item.status, completed, date),
+    reminder: isRecord(item.reminder)
+      ? {
+          enabled: asBoolean(item.reminder.enabled, false),
+          type: item.reminder.type === "start" ? "start" : "due",
+          offsetMinutes: asNumber(item.reminder.offsetMinutes, 15) ?? 15,
+          customAt: asString(item.reminder.customAt, "") || undefined,
+        }
+      : undefined,
+    repeatRule: isRecord(item.repeatRule) ? normalizeTemplate({ title: "任务重复", subject: item.subject, recurrence: item.repeatRule }).recurrence : undefined,
+    subtasks: Array.isArray(item.subtasks)
+      ? item.subtasks
+          .filter(isRecord)
+          .map((subtask) => ({
+            id: asString(subtask.id, crypto.randomUUID()),
+            title: asString(subtask.title, "").trim(),
+            completed: asBoolean(subtask.completed, false),
+          }))
+          .filter((subtask) => subtask.title)
+      : [],
+    sortOrder: asNumber(item.sortOrder),
+    archived: asBoolean(item.archived, false),
     evidenceRequirement: evidenceRequirement(item.evidenceRequirement),
     evidenceId: asString(item.evidenceId, "") || undefined,
     recurringTemplateId: asString(item.recurringTemplateId, "") || undefined,
