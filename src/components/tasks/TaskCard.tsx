@@ -1,10 +1,11 @@
-import { FormEvent, useState } from "react";
-import { Bell, Check, Edit3, GripVertical, MoreHorizontal, Repeat2, Save, Trash2 } from "lucide-react";
-import { EVIDENCE_LABEL, STATUS_LABEL, StudyTask, TaskEvidence, SUBJECTS, Subject } from "../../types/task";
+import { useState } from "react";
+import { Bell, Check, Edit3, GripVertical, MoreHorizontal, Repeat2, Trash2 } from "lucide-react";
+import { EVIDENCE_LABEL, STATUS_LABEL, StudyTask, TaskEvidence } from "../../types/task";
 import { formatTime } from "../../utils/date";
 import { Button } from "../common/Button";
 import { CollapsibleSection } from "../common/CollapsibleSection";
 import { Modal } from "../common/Modal";
+import { TaskEditorSheet } from "./TaskEditorSheet";
 
 interface TaskCardProps {
   task: StudyTask;
@@ -45,9 +46,6 @@ const dotColor = {
   其他: "bg-slate-300",
 };
 
-const inputClass =
-  "min-h-11 w-full rounded-[10px] border border-[#E9EBEF] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#4F6EF7] focus:ring-4 focus:ring-[#4F6EF7]/10 dark:border-slate-700 dark:bg-slate-950";
-
 export function TaskCard({
   task,
   showEstimatedTime,
@@ -72,50 +70,12 @@ export function TaskCard({
   const [editOpen, setEditOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState<"move" | "copy" | null>(null);
   const [targetDate, setTargetDate] = useState(task.date);
-  const [draft, setDraft] = useState({
-    title: task.title,
-    date: task.date,
-    startTime: task.startTime ?? "",
-    dueTime: task.dueTime ?? "",
-    subject: task.subject,
-    estimatedMinutes: task.estimatedMinutes?.toString() ?? "",
-    priority: task.priority,
-    description: task.description ?? "",
-    subtasks: task.subtasks?.map((item) => `${item.completed ? "[x]" : "[ ]"} ${item.title}`).join("\n") ?? "",
-  });
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const completed = task.status === "completed";
   const category = task.subject || "其他";
   const inactive = task.status === "postponed" || task.status === "cancelled";
   const subtaskTotal = task.subtasks?.length ?? 0;
   const subtaskDone = task.subtasks?.filter((item) => item.completed).length ?? 0;
-
-  const submitEdit = (event: FormEvent) => {
-    event.preventDefault();
-    if (!draft.title.trim()) return;
-    onUpdate?.(task, {
-      title: draft.title.trim() || task.title,
-      date: draft.date,
-      startTime: draft.startTime || undefined,
-      dueTime: draft.dueTime || undefined,
-      allDay: !draft.startTime && !draft.dueTime,
-      subject: draft.subject,
-      estimatedMinutes: draft.estimatedMinutes ? Number(draft.estimatedMinutes) : undefined,
-      priority: draft.priority,
-      description: draft.description.trim() || undefined,
-      subtasks: draft.subtasks
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line) => ({
-          id: crypto.randomUUID(),
-          completed: /^\[x\]/i.test(line),
-          title: line.replace(/^\[(x| )\]\s*/i, "").trim(),
-        }))
-        .filter((item) => item.title),
-    });
-    setEditOpen(false);
-  };
 
   const submitDateAction = () => {
     if (dateOpen === "move") onMove?.(task, targetDate);
@@ -270,26 +230,17 @@ export function TaskCard({
         </div>
       </Modal>
 
-      <Modal title="编辑任务" open={editOpen} onClose={() => setEditOpen(false)}>
-        <form className="space-y-4" onSubmit={submitEdit}>
-          <label className="block text-sm font-semibold">任务名称<input className={`${inputClass} mt-1`} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm font-semibold">日期<input className={`${inputClass} mt-1`} type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} /></label>
-            <label className="block text-sm font-semibold">分类<select className={`${inputClass} mt-1`} value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value as Subject })}>{SUBJECTS.map((subject) => <option key={subject}>{subject}</option>)}</select></label>
-            <label className="block text-sm font-semibold">起始时间<input className={`${inputClass} mt-1`} type="time" value={draft.startTime} onChange={(event) => setDraft({ ...draft, startTime: event.target.value })} /></label>
-            <label className="block text-sm font-semibold">截止时间<input className={`${inputClass} mt-1`} type="time" value={draft.dueTime} onChange={(event) => setDraft({ ...draft, dueTime: event.target.value })} /></label>
-            <label className="block text-sm font-semibold">预计分钟<input className={`${inputClass} mt-1`} type="number" min="0" value={draft.estimatedMinutes} onChange={(event) => setDraft({ ...draft, estimatedMinutes: event.target.value })} /></label>
-            <label className="block text-sm font-semibold">优先级<select className={`${inputClass} mt-1`} value={draft.priority} onChange={(event) => setDraft({ ...draft, priority: event.target.value as StudyTask["priority"] })}><option value="none">无</option><option value="low">低</option><option value="medium">中</option><option value="high">高</option></select></label>
-          </div>
-          <label className="block text-sm font-semibold">任务说明<textarea className={`${inputClass} mt-1 min-h-24`} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label>
-          <label className="block text-sm font-semibold">子任务<textarea className={`${inputClass} mt-1 min-h-24`} value={draft.subtasks} onChange={(event) => setDraft({ ...draft, subtasks: event.target.value })} placeholder="[ ] 准备资料&#10;[x] 已完成的小步骤" /></label>
-          <Button className="w-full" icon={<Save size={18} />}>保存</Button>
-        </form>
-      </Modal>
+      <TaskEditorSheet
+        open={editOpen}
+        mode="edit"
+        task={task}
+        onClose={() => setEditOpen(false)}
+        onUpdate={onUpdate}
+      />
 
       <Modal title={dateOpen === "move" ? "移动日期" : "复制任务"} open={Boolean(dateOpen)} onClose={() => setDateOpen(null)}>
         <div className="space-y-4">
-          <label className="block text-sm font-semibold">选择日期<input className={`${inputClass} mt-1`} type="date" value={targetDate} onChange={(event) => setTargetDate(event.target.value)} /></label>
+          <label className="block text-sm font-semibold">选择日期<input className="mt-2 min-h-11 w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm outline-none focus:border-[var(--color-brand)]" type="date" value={targetDate} onChange={(event) => setTargetDate(event.target.value)} /></label>
           <Button className="w-full" onClick={submitDateAction}>{dateOpen === "move" ? "确认移动" : "确认复制"}</Button>
         </div>
       </Modal>

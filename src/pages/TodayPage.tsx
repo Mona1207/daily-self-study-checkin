@@ -1,13 +1,11 @@
 import { FormEvent, useMemo, useState } from "react";
-import { CalendarDays, Plus, Save, SlidersHorizontal } from "lucide-react";
-import { AppSettings, DailyReflection, EvidenceRequirement, Priority, StudyTask, TaskEvidence, SUBJECTS, Subject } from "../types/task";
-import { Button } from "../components/common/Button";
-import { Card } from "../components/common/Card";
+import { CalendarDays, Plus, SlidersHorizontal } from "lucide-react";
+import { AppSettings, DailyReflection, StudyTask, TaskEvidence } from "../types/task";
 import { CollapsibleSection } from "../components/common/CollapsibleSection";
-import { Modal } from "../components/common/Modal";
 import { ProgressBar } from "../components/common/ProgressBar";
 import { ReflectionPanel } from "../components/reflection/ReflectionPanel";
 import { TaskCard } from "../components/tasks/TaskCard";
+import { TaskEditorSheet, TaskEditorValue } from "../components/tasks/TaskEditorSheet";
 import { addDays, getGreeting, getTodayString, getWeekdayName, toDateString } from "../utils/date";
 import { getCompletionPercent, summarizeDay } from "../utils/statistics";
 import { sortTasks } from "../utils/taskSort";
@@ -33,15 +31,6 @@ interface TodayPageProps {
   onGoCalendar: () => void;
   notify: (type: "success" | "error" | "info", message: string) => void;
 }
-
-const inputClass =
-  "min-h-11 w-full rounded-[10px] border border-[#E9EBEF] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#4F6EF7] focus:ring-4 focus:ring-[#4F6EF7]/10 dark:border-slate-700 dark:bg-slate-950";
-
-const priorityOptions: Array<{ value: Priority; label: string }> = [
-  { value: "low", label: "低" },
-  { value: "medium", label: "中" },
-  { value: "high", label: "高" },
-];
 
 const SectionTasks = ({
   list,
@@ -135,24 +124,8 @@ export function TodayPage({
   const today = getTodayString();
   const todayDate = new Date();
   const [quickOpen, setQuickOpen] = useState(false);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [quickTitle, setQuickTitle] = useState("");
   const [draggedTask, setDraggedTask] = useState<StudyTask | null>(null);
-  const [draft, setDraft] = useState({
-    title: "",
-    date: today,
-    startTime: "",
-    dueTime: "",
-    allDay: true,
-    subject: "工作" as Subject,
-    description: "",
-    estimatedMinutes: "",
-    priority: "medium" as Priority,
-    evidenceRequirement: "none" as EvidenceRequirement,
-    subtasks: "",
-    reminderEnabled: false,
-    reminderOffset: "15",
-  });
 
   const summary = summarizeDay(tasks, today);
   const percent = getCompletionPercent(summary);
@@ -167,50 +140,8 @@ export function TodayPage({
     return { overdue, pending, completed, other, suggested };
   }, [tasks, today, todayTasks]);
 
-  const resetDraft = () => {
-    setDraft({
-      title: "",
-      date: today,
-      startTime: "",
-      dueTime: "",
-      allDay: true,
-      subject: "工作",
-      description: "",
-      estimatedMinutes: "",
-      priority: "medium",
-      evidenceRequirement: "none",
-      subtasks: "",
-      reminderEnabled: false,
-      reminderOffset: "15",
-    });
-    setAdvancedOpen(false);
-  };
-
-  const submitQuickTask = (event: FormEvent) => {
-    event.preventDefault();
-    if (!draft.title.trim()) return notify("error", "先写下任务名称。");
-    onAddTask({
-      title: draft.title.trim(),
-      date: draft.date,
-      startTime: draft.allDay ? undefined : draft.startTime || undefined,
-      dueTime: draft.allDay ? undefined : draft.dueTime || undefined,
-      allDay: draft.allDay,
-      subject: draft.subject,
-      description: draft.description.trim() || undefined,
-      estimatedMinutes: draft.estimatedMinutes ? Number(draft.estimatedMinutes) : undefined,
-      priority: draft.priority,
-      evidenceRequirement: draft.evidenceRequirement,
-      subtasks: draft.subtasks
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((title) => ({ id: crypto.randomUUID(), title, completed: false })),
-      reminder: draft.reminderEnabled ? { enabled: true, type: draft.dueTime ? "due" : "start", offsetMinutes: Number(draft.reminderOffset) || 15 } : undefined,
-      sortOrder: Date.now(),
-    });
-    notify("success", "任务已添加。");
-    setQuickOpen(false);
-    resetDraft();
+  const createFromEditor = (value: TaskEditorValue) => {
+    onAddTask(value);
   };
 
   const submitInlineQuick = (event: FormEvent) => {
@@ -340,39 +271,14 @@ export function TodayPage({
 
       <ReflectionPanel reflections={reflections} onSave={onSaveReflection} notify={notify} />
 
-      <Modal title="添加任务" open={quickOpen} onClose={() => setQuickOpen(false)}>
-        <form className="space-y-4 pb-1" onSubmit={submitQuickTask}>
-          <label className="text-sm font-semibold">
-            任务名称
-            <input autoFocus className={`${inputClass} mt-1`} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="写下要完成的事" />
-          </label>
-          <label className="text-sm font-semibold">
-            日期
-            <input className={`${inputClass} mt-1`} type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} />
-          </label>
-          <button type="button" className="min-h-11 text-sm font-semibold text-[#4F6EF7]" onClick={() => setAdvancedOpen((value) => !value)}>
-            {advancedOpen ? "收起时间、分类或更多设置" : "添加时间、分类或更多设置"}
-          </button>
-          {advancedOpen && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="text-sm font-semibold">分类<select className={`${inputClass} mt-1`} value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value as Subject })}>{SUBJECTS.map((subject) => <option key={subject} value={subject}>{subject}</option>)}</select></label>
-              <label className="flex items-center justify-between rounded-[10px] border border-[#E9EBEF] px-3 py-2 text-sm font-semibold dark:border-slate-700">全天任务<input type="checkbox" checked={draft.allDay} onChange={(event) => setDraft({ ...draft, allDay: event.target.checked })} /></label>
-              <label className="text-sm font-semibold">起始时间<input className={`${inputClass} mt-1`} type="time" value={draft.startTime} disabled={draft.allDay} onChange={(event) => setDraft({ ...draft, startTime: event.target.value })} /></label>
-              <label className="text-sm font-semibold">截止时间<input className={`${inputClass} mt-1`} type="time" value={draft.dueTime} disabled={draft.allDay} onChange={(event) => setDraft({ ...draft, dueTime: event.target.value })} /></label>
-              <label className="text-sm font-semibold">预计时长<input className={`${inputClass} mt-1`} type="number" min="0" value={draft.estimatedMinutes} onChange={(event) => setDraft({ ...draft, estimatedMinutes: event.target.value })} /></label>
-              <label className="text-sm font-semibold">优先级<select className={`${inputClass} mt-1`} value={draft.priority} onChange={(event) => setDraft({ ...draft, priority: event.target.value as Priority })}><option value="none">无</option>{priorityOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-              <label className="text-sm font-semibold">完成记录要求<select className={`${inputClass} mt-1`} value={draft.evidenceRequirement} onChange={(event) => setDraft({ ...draft, evidenceRequirement: event.target.value as EvidenceRequirement })}><option value="none">不填写</option><option value="text">文字</option><option value="image">图片</option><option value="text_and_image">文字和图片</option></select></label>
-              <label className="flex items-center justify-between rounded-[10px] border border-[#E9EBEF] px-3 py-2 text-sm font-semibold dark:border-slate-700">提醒<input type="checkbox" checked={draft.reminderEnabled} onChange={(event) => setDraft({ ...draft, reminderEnabled: event.target.checked })} /></label>
-              <label className="text-sm font-semibold">提前提醒<select className={`${inputClass} mt-1`} value={draft.reminderOffset} disabled={!draft.reminderEnabled} onChange={(event) => setDraft({ ...draft, reminderOffset: event.target.value })}><option value="5">5分钟</option><option value="15">15分钟</option><option value="30">30分钟</option><option value="60">1小时</option><option value="1440">1天</option></select></label>
-              <label className="text-sm font-semibold sm:col-span-2">子任务<textarea className={`${inputClass} mt-1 min-h-20`} value={draft.subtasks} onChange={(event) => setDraft({ ...draft, subtasks: event.target.value })} placeholder="每行一个子任务" /></label>
-              <label className="text-sm font-semibold sm:col-span-2">任务说明<textarea className={`${inputClass} mt-1 min-h-24`} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label>
-            </div>
-          )}
-          <div className="sticky bottom-0 bg-white pt-2 dark:bg-slate-900">
-            <Button className="w-full" icon={<Save size={18} />}>保存任务</Button>
-          </div>
-        </form>
-      </Modal>
+      <TaskEditorSheet
+        open={quickOpen}
+        mode="create"
+        initialDate={today}
+        onClose={() => setQuickOpen(false)}
+        onCreate={createFromEditor}
+        notify={notify}
+      />
     </div>
   );
 }

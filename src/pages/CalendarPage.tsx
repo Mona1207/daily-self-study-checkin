@@ -1,11 +1,11 @@
 import { useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Save } from "lucide-react";
-import { AppSettings, DailyReflection, StudyTask, Subject, SUBJECTS } from "../types/task";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { AppSettings, DailyReflection, StudyTask } from "../types/task";
 import { Button } from "../components/common/Button";
 import { Card } from "../components/common/Card";
 import { CollapsibleSection } from "../components/common/CollapsibleSection";
-import { Modal } from "../components/common/Modal";
 import { TaskCard } from "../components/tasks/TaskCard";
+import { TaskEditorSheet, TaskEditorValue } from "../components/tasks/TaskEditorSheet";
 import { formatChineseDate, getMonthDays, getTodayString, isSameMonth, toDateString } from "../utils/date";
 import { summarizeDay } from "../utils/statistics";
 import { sortTasks } from "../utils/taskSort";
@@ -31,9 +31,6 @@ const dotClass = {
   empty: "",
 };
 
-const inputClass =
-  "min-h-11 w-full rounded-[10px] border border-[#E9EBEF] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#4F6EF7] focus:ring-4 focus:ring-[#4F6EF7]/10 dark:border-slate-700 dark:bg-slate-950";
-
 export function CalendarPage({ tasks, settings, reflections = [], onAddTask, onUpdateTask, onDeleteTask, onComplete, onUndo }: CalendarPageProps) {
   const today = getTodayString();
   const taskAreaRef = useRef<HTMLDivElement>(null);
@@ -41,9 +38,6 @@ export function CalendarPage({ tasks, settings, reflections = [], onAddTask, onU
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(today);
   const [addOpen, setAddOpen] = useState(false);
-  const [quickTitle, setQuickTitle] = useState("");
-  const [quickSubject, setQuickSubject] = useState<Subject>("工作");
-  const [quickMinutes, setQuickMinutes] = useState("");
   const days = useMemo(() => getMonthDays(monthCursor.getFullYear(), monthCursor.getMonth()), [monthCursor]);
   const selectedSummary = summarizeDay(tasks, selectedDate);
   const selectedTasks = sortTasks(tasks.filter((task) => task.date === selectedDate));
@@ -63,21 +57,8 @@ export function CalendarPage({ tasks, settings, reflections = [], onAddTask, onU
     requestAnimationFrame(() => taskAreaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
-  const addTask = () => {
-    const title = quickTitle.trim();
-    if (!title || !onAddTask) return;
-    onAddTask({
-      date: selectedDate,
-      title,
-      subject: quickSubject,
-      priority: "medium",
-      estimatedMinutes: Number(quickMinutes) || undefined,
-      evidenceRequirement: "none",
-      postponeHistory: [],
-    });
-    setQuickTitle("");
-    setQuickMinutes("");
-    setAddOpen(false);
+  const addTask = (value: TaskEditorValue) => {
+    onAddTask?.({ ...value, date: value.date || selectedDate });
   };
 
   return (
@@ -201,31 +182,13 @@ export function CalendarPage({ tasks, settings, reflections = [], onAddTask, onU
           </div>
         </div>
       </div>
-      <Modal title="添加任务" open={addOpen} onClose={() => setAddOpen(false)}>
-        <div className="space-y-4">
-          <label className="block text-sm font-semibold">
-            任务名称
-            <input className={`${inputClass} mt-1`} autoFocus value={quickTitle} onChange={(event) => setQuickTitle(event.target.value)} placeholder="这一天要做什么" />
-          </label>
-          <label className="block text-sm font-semibold">
-            日期
-            <input className={`${inputClass} mt-1`} type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} />
-          </label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm font-semibold">
-              分类
-              <select className={`${inputClass} mt-1`} value={quickSubject} onChange={(event) => setQuickSubject(event.target.value as Subject)}>
-                {SUBJECTS.map((subject) => <option key={subject}>{subject}</option>)}
-              </select>
-            </label>
-            <label className="block text-sm font-semibold">
-              预计分钟
-              <input className={`${inputClass} mt-1`} type="number" min="0" value={quickMinutes} onChange={(event) => setQuickMinutes(event.target.value)} />
-            </label>
-          </div>
-          <Button className="w-full" icon={<Save size={18} />} onClick={addTask} disabled={!quickTitle.trim()}>保存任务</Button>
-        </div>
-      </Modal>
+      <TaskEditorSheet
+        open={addOpen}
+        mode="create"
+        initialDate={selectedDate}
+        onClose={() => setAddOpen(false)}
+        onCreate={addTask}
+      />
     </div>
   );
 }
