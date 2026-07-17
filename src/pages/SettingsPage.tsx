@@ -186,34 +186,59 @@ export function SettingsPage({
   };
 
   const renderMain = () => (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <p className="text-sm font-semibold text-[var(--color-brand)]">今日清单</p>
         <h1 className="mt-1 text-[28px] font-bold">我的</h1>
-        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">管理分类、提醒、外观和本地数据。</p>
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Card className="p-3 shadow-none"><div className="text-2xl font-semibold">{tasks.filter((task) => task.status === "completed").length}</div><div className="mt-1 text-xs text-[var(--color-text-secondary)]">累计完成</div></Card>
-        <Card className="p-3 shadow-none"><div className="text-2xl font-semibold">{new Set(tasks.map((task) => task.date)).size}</div><div className="mt-1 text-xs text-[var(--color-text-secondary)]">使用天数</div></Card>
-      </div>
-      <div className="space-y-3">
-        {[
-          { key: "task" as const, icon: <Layers3 size={20} />, title: "任务与分类", desc: "分类管理、周期任务、默认任务设置" },
-          { key: "reminders" as const, icon: <Bell size={20} />, title: "提醒", desc: "通知与提醒" },
-          { key: "appearance" as const, icon: settings.darkMode ? <Moon size={20} /> : <Sun size={20} />, title: "外观", desc: "主题、字体和动画" },
-          { key: "data" as const, icon: <Database size={20} />, title: "数据", desc: "导入、导出与备份" },
-          { key: "about" as const, icon: <Settings size={20} />, title: "其他", desc: "隐私说明、使用帮助、关于 App" },
-        ].map((item) => (
-          <button key={item.key} className="flex w-full items-center gap-4 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-left" onClick={() => setPanel(item.key)}>
-            <span className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[var(--color-brand-soft)] text-[var(--color-brand)]">{item.icon}</span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-semibold text-[var(--color-text)]">{item.title}</span>
-              <span className="mt-1 block text-sm text-[var(--color-text-secondary)]">{item.desc}</span>
-            </span>
-            <ChevronRight className="text-[#9CA3AF]" size={20} />
-          </button>
-        ))}
-      </div>
+      <section className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <div className="grid grid-cols-2 gap-6">
+          <div><div className="text-[28px] font-semibold leading-9">{tasks.filter((task) => task.status === "completed").length}</div><div className="text-[13px] text-[var(--color-text-secondary)]">累计完成</div></div>
+          <div><div className="text-[28px] font-semibold leading-9">{new Set(tasks.map((task) => task.date)).size}</div><div className="text-[13px] text-[var(--color-text-secondary)]">连续使用</div></div>
+        </div>
+      </section>
+      {[
+        {
+          title: "任务设置",
+          items: [
+            { key: "task" as const, icon: <Layers3 size={19} />, title: "分类管理", desc: "分类、周期任务、默认设置" },
+          ],
+        },
+        {
+          title: "偏好",
+          items: [
+            { key: "reminders" as const, icon: <Bell size={19} />, title: "提醒", desc: "通知权限和默认提醒" },
+            { key: "appearance" as const, icon: settings.darkMode ? <Moon size={19} /> : <Sun size={19} />, title: "外观", desc: "主题、动画与触感" },
+          ],
+        },
+        {
+          title: "数据",
+          items: [
+            { key: "data" as const, icon: <Database size={19} />, title: "导入与导出", desc: "备份、恢复、本地数据" },
+          ],
+        },
+        {
+          title: "关于",
+          items: [
+            { key: "about" as const, icon: <Settings size={19} />, title: "关于 App", desc: "帮助、隐私、版本号" },
+          ],
+        },
+      ].map((group) => (
+        <section key={group.title}>
+          <h2 className="mb-2 px-1 text-[13px] font-medium text-[var(--color-text-secondary)]">{group.title}</h2>
+          <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">
+            {group.items.map((item) => (
+              <button key={item.key} className="flex min-h-14 w-full items-center gap-3 border-b border-[var(--color-border)] px-3 text-left last:border-b-0" onClick={() => setPanel(item.key)}>
+                <span className="flex h-8 w-8 items-center justify-center text-[var(--color-text-secondary)]">{item.icon}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] font-medium text-[var(--color-text)]">{item.title}</span>
+                  <span className="mt-0.5 block truncate text-[13px] text-[var(--color-text-secondary)]">{item.desc}</span>
+                </span>
+                <ChevronRight className="text-[var(--color-text-muted)]" size={18} />
+              </button>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 

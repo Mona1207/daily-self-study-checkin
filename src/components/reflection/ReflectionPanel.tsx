@@ -3,7 +3,6 @@ import { BookMarked, ChevronRight, Save } from "lucide-react";
 import { DailyMood, DailyReflection, MOOD_LABEL } from "../../types/task";
 import { getTodayString } from "../../utils/date";
 import { Button } from "../common/Button";
-import { Card } from "../common/Card";
 import { Modal } from "../common/Modal";
 
 interface ReflectionPanelProps {
@@ -59,11 +58,11 @@ export function ReflectionPanel({ date = getTodayString(), reflections = [], emp
   return (
     <>
       <button className="block w-full text-left" onClick={openEditor}>
-        <Card className={`p-3 ${emphasized ? "ring-2 ring-indigo-200 dark:ring-indigo-500/40" : ""}`}>
-          <div className="flex items-center justify-between gap-4">
+        <div className={`rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 ${emphasized ? "ring-2 ring-indigo-200 dark:ring-indigo-500/40" : ""}`}>
+          <div className="flex min-h-11 items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--color-brand-soft)] text-[var(--color-brand)]">
-                <BookMarked size={22} />
+              <div className="flex h-8 w-8 items-center justify-center text-[var(--color-text-secondary)]">
+                <BookMarked size={20} strokeWidth={1.8} />
               </div>
               <div>
                 <h2 className="text-[15px] font-semibold">记录今天</h2>
@@ -74,7 +73,7 @@ export function ReflectionPanel({ date = getTodayString(), reflections = [], emp
             </div>
             <ChevronRight className="shrink-0 text-slate-400" size={22} />
           </div>
-        </Card>
+        </div>
       </button>
 
       <Modal title="每日回顾" open={open} onClose={() => setOpen(false)}>

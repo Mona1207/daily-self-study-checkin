@@ -25,7 +25,7 @@ export function AppShell({ activePage, onNavigate, settings, children }: AppShel
         <div className="mx-auto w-full max-w-3xl px-[var(--page-x)] py-4 sm:py-6">{children}</div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 px-3 pb-[max(6px,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur">
         <div className="mx-auto grid max-w-3xl grid-cols-4 gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -34,16 +34,17 @@ export function AppShell({ activePage, onNavigate, settings, children }: AppShel
               <button
                 key={item.key}
                 onClick={() => onNavigate(item.key)}
-                className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-[var(--radius-sm)] text-xs font-medium transition duration-[var(--motion-fast)] ${
+                className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[var(--radius-sm)] text-[11px] font-medium transition duration-[var(--motion-fast)] ${
                   active
-                    ? "bg-[var(--color-brand-soft)] text-[var(--color-brand)]"
+                    ? "text-[var(--color-brand)]"
                     : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"
                 }`}
                 aria-current={active ? "page" : undefined}
                 aria-label={`切换到${item.label}`}
               >
-                <Icon size={20} />
+                <Icon size={22} strokeWidth={1.9} />
                 <span>{item.label}</span>
+                {active ? <span className="absolute bottom-0.5 h-[3px] w-[3px] rounded-full bg-[var(--color-brand)]" /> : null}
               </button>
             );
           })}

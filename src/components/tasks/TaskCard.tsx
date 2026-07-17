@@ -135,7 +135,7 @@ export function TaskCard({
   return (
     <>
       <article
-        className={`rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 ${compact ? "py-2" : "py-3"} transition duration-[var(--motion-fast)] ${completed ? "opacity-80" : ""}`}
+        className={`relative border-b border-[var(--color-border)] bg-[var(--color-surface)] px-0 ${compact ? "py-2" : "py-3"} transition duration-[var(--motion-fast)] last:border-b-0 ${completed ? "opacity-75" : ""}`}
         draggable={Boolean(onDragStart && onDropTask)}
         onDragStart={() => onDragStart?.(task)}
         onDragOver={(event) => event.preventDefault()}
@@ -143,6 +143,7 @@ export function TaskCard({
         onTouchStart={(event) => setTouchStartX(event.changedTouches[0]?.clientX ?? null)}
         onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
       >
+        {task.priority === "high" && !completed ? <span className="absolute left-0 top-3 h-8 w-[2px] rounded-full bg-[var(--color-danger)]" /> : null}
         <div className="flex items-start gap-3">
           {onDragStart && onDropTask ? (
             <span className="mt-1 hidden h-8 w-5 shrink-0 cursor-grab items-center justify-center text-[var(--color-text-muted)] sm:flex" aria-hidden="true">
@@ -150,7 +151,7 @@ export function TaskCard({
             </span>
           ) : null}
           <button
-            className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-sm transition ${
+            className={`ml-3 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-sm transition ${
               completed ? "border-[var(--color-success)] bg-[var(--color-success)] text-white" : "border-[var(--color-border)] bg-[var(--color-surface)] text-transparent"
             }`}
             onClick={() => (completed ? onUndo?.(task) : onComplete?.(task))}
@@ -160,18 +161,17 @@ export function TaskCard({
           </button>
 
           <button className="min-w-0 flex-1 text-left" onClick={() => setDetailsOpen(true)}>
-            <div className={`break-words text-[15px] font-semibold ${completed ? "text-[var(--color-text-muted)] line-through" : "text-[var(--color-text)]"}`}>
+            <div className={`break-words text-[15px] font-medium leading-[22px] ${completed ? "text-[var(--color-text-muted)] line-through decoration-[0.8px]" : "text-[var(--color-text)]"}`}>
               {task.title}
-              {suggested && !completed ? <span className="ml-2 rounded-[6px] bg-[var(--color-brand-soft)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-brand)]">建议先做</span> : null}
+              {suggested && !completed ? <span className="ml-2 rounded-[var(--radius-xs)] bg-[var(--color-brand-soft)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-brand)]">建议先做</span> : null}
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+            <div className="mt-0.5 flex items-center gap-2 overflow-hidden text-[13px] leading-[18px] text-[var(--color-text-secondary)]">
               <span className="inline-flex items-center gap-1">
                 <span className={`h-2 w-2 rounded-full ${dotColor[category as keyof typeof dotColor] ?? "bg-slate-300"}`} />
                 {category}
               </span>
               {task.allDay || (!task.startTime && !task.dueTime) ? <span>全天</span> : task.dueTime ? <span>{task.dueTime}前</span> : task.startTime ? <span>{task.startTime}</span> : null}
               {showEstimatedTime && task.estimatedMinutes ? <span>预计{task.estimatedMinutes}分钟</span> : null}
-              {task.priority === "high" ? <span className="rounded-[6px] bg-rose-50 px-1.5 py-0.5 text-[var(--color-danger)] dark:bg-rose-500/15">重要</span> : null}
               {subtaskTotal > 0 ? <span>{subtaskDone}/{subtaskTotal} 子任务</span> : null}
               {task.recurringTemplateId || task.repeatRule ? <Repeat2 size={13} aria-label="周期任务" /> : null}
               {task.reminder?.enabled ? <Bell size={13} aria-label="已设置提醒" /> : null}
@@ -181,7 +181,7 @@ export function TaskCard({
 
           <div className="relative shrink-0">
             <button
-              className="flex h-9 w-9 items-center justify-center rounded-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"
+              className="mr-1 flex h-9 w-9 items-center justify-center rounded-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"
               onClick={() => setMenuOpen((value) => !value)}
               aria-label="更多操作"
             >

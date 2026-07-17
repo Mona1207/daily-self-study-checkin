@@ -70,15 +70,14 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
   return (
     <div className="space-y-4 pb-24">
       <div>
-        <p className="text-sm font-semibold text-[var(--color-brand)]">任务完成情况</p>
         <h1 className="mt-1 text-[28px] font-bold">任务统计</h1>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex h-10 rounded-[var(--radius-sm)] bg-[var(--color-surface-muted)] p-1">
         {(Object.keys(rangeLabel) as RangeKey[]).map((key) => (
           <button
             key={key}
-            className={`min-h-10 shrink-0 rounded-[10px] px-4 text-sm font-semibold ${range === key ? "bg-[var(--color-brand)] text-white" : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] ring-1 ring-[var(--color-border)]"}`}
+            className={`min-w-0 flex-1 rounded-[8px] px-2 text-[13px] font-medium ${range === key ? "bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm" : "text-[var(--color-text-secondary)]"}`}
             onClick={() => setRange(key)}
           >
             {rangeLabel[key]}
@@ -92,12 +91,29 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Card className="p-3 shadow-none"><div className="text-2xl font-semibold">{completed}</div><div className="mt-1 text-xs text-[var(--color-text-secondary)]">完成任务数</div></Card>
-        <Card className="p-3 shadow-none"><div className="text-2xl font-semibold">{completionRate}%</div><div className="mt-1 text-xs text-[var(--color-text-secondary)]">完成率</div></Card>
-        <Card className="p-3 shadow-none"><div className="text-2xl font-semibold">{onTimeRate}%</div><div className="mt-1 text-xs text-[var(--color-text-secondary)]">按时完成率</div></Card>
-        <Card className="p-3 shadow-none"><div className="text-2xl font-semibold">{streak}</div><div className="mt-1 text-xs text-[var(--color-text-secondary)]">连续完成天数</div></Card>
-      </div>
+      {hasData ? (
+        <section className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="text-[13px] leading-[18px] text-[var(--color-text-secondary)]">{rangeLabel[range]}完成率</div>
+              <div className="mt-1 text-[28px] font-semibold leading-9">{completionRate}%</div>
+              <div className="mt-1 text-[13px] leading-[18px] text-[var(--color-text-secondary)]">完成 {completed} / {accountable} 项</div>
+            </div>
+            <div className="flex h-16 w-28 items-end gap-1" aria-label={`${rangeLabel[range]}趋势`}>
+              {daily.slice(-12).map((item) => (
+                <span key={item.date} className="flex-1 rounded-full bg-[var(--color-brand)]/25" style={{ height: `${Math.max(8, getCompletionPercent(item) || (item.completed ? 18 : 0))}%` }} />
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-3 border-t border-[var(--color-border)] pt-3 text-center">
+            <div><div className="text-[17px] font-semibold">{completed}</div><div className="mt-0.5 text-xs text-[var(--color-text-secondary)]">完成</div></div>
+            <div><div className="text-[17px] font-semibold">{onTimeCompleted}</div><div className="mt-0.5 text-xs text-[var(--color-text-secondary)]">按时</div></div>
+            <div><div className="text-[17px] font-semibold">{streak}</div><div className="mt-0.5 text-xs text-[var(--color-text-secondary)]">连续天</div></div>
+          </div>
+        </section>
+      ) : (
+        <section className="py-12 text-center text-sm text-[var(--color-text-secondary)]">完成任务后，这里会生成你的执行趋势。</section>
+      )}
 
       <CollapsibleSection id="statistics-trend" title="完成趋势" subtitle={hasData ? `${rangeLabel[range]} · ${trendMode === "count" ? "完成数量" : "完成率"}` : undefined} defaultExpanded>
         <div className="mb-3 flex rounded-[10px] bg-[var(--color-surface-muted)] p-1">
@@ -108,11 +124,11 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
           ))}
         </div>
         {!hasData ? (
-          <p className="text-sm text-[var(--color-text-secondary)]">完成几项任务后，这里会生成你的趋势。</p>
+          <p className="text-sm text-[var(--color-text-secondary)]">完成任务后，这里会生成你的执行趋势。</p>
         ) : (
-          <div className="space-y-3">
+          <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
             {daily.map((item) => (
-              <div key={item.date}>
+              <div key={item.date} className="py-1.5">
                 <div className="mb-1 flex justify-between text-xs text-[var(--color-text-secondary)]"><span>{item.date.slice(5)}</span><span>{item.completed}/{item.total}</span></div>
                 <ProgressBar percent={trendMode === "count" ? Math.round((item.completed / maxCompleted) * 100) : getCompletionPercent(item)} label="" />
               </div>
@@ -125,7 +141,7 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
         {bySubject.length === 0 ? <p className="text-sm text-[var(--color-text-secondary)]">还没有分类数据。完成任务后会显示各分类的完成率。</p> : (
           <div className="space-y-2">
             {bySubject.slice(0, 5).map((item) => (
-              <div key={item.subject} className="rounded-[10px] bg-[var(--color-surface-muted)] p-3 text-sm">
+              <div key={item.subject} className="py-2 text-sm">
                 <div className="mb-2 flex items-center justify-between"><span>{item.subject}</span><span className="text-[var(--color-text-secondary)]">完成 {item.completed} / {item.total}</span></div>
                 <ProgressBar percent={item.total ? Math.round((item.completed / item.total) * 100) : 0} label="" />
               </div>
@@ -137,17 +153,17 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
 
       <CollapsibleSection id="statistics-status" title="任务状态" defaultExpanded={false}>
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-[10px] bg-[var(--color-surface-muted)] p-3">已完成：{completed}</div>
-          <div className="rounded-[10px] bg-[var(--color-surface-muted)] p-3">未完成：{Math.max(0, accountable - completed)}</div>
-          <div className="rounded-[10px] bg-[var(--color-surface-muted)] p-3">已逾期：{statusCounts.overdue}</div>
-          <div className="rounded-[10px] bg-[var(--color-surface-muted)] p-3">已取消：{statusCounts.cancelled}</div>
+          <div className="border-b border-[var(--color-border)] py-2">已完成：{completed}</div>
+          <div className="border-b border-[var(--color-border)] py-2">未完成：{Math.max(0, accountable - completed)}</div>
+          <div className="border-b border-[var(--color-border)] py-2">已逾期：{statusCounts.overdue}</div>
+          <div className="border-b border-[var(--color-border)] py-2">已取消：{statusCounts.cancelled}</div>
         </div>
       </CollapsibleSection>
 
       <CollapsibleSection id="statistics-daily-detail" title="每日完成明细" defaultExpanded={false}>
         <div className="space-y-2">
           {daily.map((item) => (
-            <button key={item.date} className="flex min-h-11 w-full items-center justify-between rounded-[10px] bg-[var(--color-surface-muted)] p-3 text-left text-sm" onClick={() => onGoDate?.(item.date)}>
+            <button key={item.date} className="flex min-h-11 w-full items-center justify-between border-b border-[var(--color-border)] py-2 text-left text-sm last:border-b-0" onClick={() => onGoDate?.(item.date)}>
               <span>{item.date}</span>
               <span>{item.completed}/{item.total} · {getCompletionPercent(item)}%</span>
             </button>

@@ -66,10 +66,10 @@ export function CollapsibleSection({
   }, [expanded, id, persistState]);
 
   return (
-    <section className={`rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] ${className}`}>
+    <section className={`${className}`}>
       <button
         type="button"
-        className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3 text-left"
+        className="flex min-h-10 w-full items-center justify-between gap-3 py-2 text-left"
         aria-expanded={expanded}
         aria-controls={contentId}
         onClick={() => setExpanded((value) => !value)}
@@ -84,7 +84,7 @@ export function CollapsibleSection({
         <ChevronDown className={`shrink-0 text-[var(--color-text-muted)] transition-transform duration-[var(--motion-fast)] ${expanded ? "rotate-180" : ""}`} size={20} />
       </button>
       {expanded && (
-        <div id={contentId} className="animate-[fadeIn_180ms_ease-out] border-t border-[var(--color-border)] px-4 py-3">
+        <div id={contentId} className="animate-[fadeIn_180ms_ease-out] py-2">
           {children}
         </div>
       )}

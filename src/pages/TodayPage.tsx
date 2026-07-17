@@ -83,7 +83,7 @@ const SectionTasks = ({
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? list : list.slice(0, limit);
   return (
-    <div className="space-y-2">
+    <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">
       {visible.map((task) => (
         <TaskCard
           key={task.id}
@@ -106,7 +106,7 @@ const SectionTasks = ({
         />
       ))}
       {list.length > limit && (
-        <button className="min-h-11 text-sm font-semibold text-[#4F6EF7]" onClick={() => setShowAll((value) => !value)}>
+        <button className="min-h-11 w-full text-sm font-medium text-[var(--color-brand)]" onClick={() => setShowAll((value) => !value)}>
           {showAll ? `收起到前${limit}项` : `显示剩余${list.length - limit}项`}
         </button>
       )}
@@ -269,39 +269,34 @@ export function TodayPage({
           <button className="text-left" onClick={onGoCalendar}>
             <div className="text-[28px] font-bold leading-tight">{todayDate.getMonth() + 1}月{todayDate.getDate()}日 <span className="text-base font-medium text-[var(--color-text-secondary)]">{getWeekdayName(todayDate)}</span></div>
           </button>
-          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{getGreeting()}，今天{summary.total}项，已完成{summary.completed}项</p>
+          <p className="mt-1 text-[13px] leading-[18px] text-[var(--color-text-secondary)]">{getGreeting()} · 今天 {summary.total} 项 · 已完成 {summary.completed} 项</p>
         </div>
-        <div className="flex gap-2">
-          <button className="flex h-11 w-11 items-center justify-center rounded-[10px] bg-[var(--color-surface)] text-[var(--color-brand)] shadow-sm" onClick={onGoCalendar} aria-label="打开日历">
-            <CalendarDays size={20} />
-          </button>
-          <button className="flex h-11 w-11 items-center justify-center rounded-[10px] bg-[var(--color-brand)] text-white shadow-sm" onClick={() => setQuickOpen(true)} aria-label="添加任务">
-            <Plus size={22} />
-          </button>
-        </div>
+        <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand)] text-white shadow-[var(--shadow-float)]" onClick={() => setQuickOpen(true)} aria-label="添加任务">
+          <Plus size={21} />
+        </button>
       </header>
 
-      <CollapsibleSection id="today-progress" title="今日概览" subtitle={summary.total ? `${summary.completed}/${summary.total} · ${percent}%` : "先安排一件重要的事吧"} defaultExpanded>
+      <section className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
         {summary.total === 0 ? (
-          <p className="text-sm text-[var(--color-text-secondary)]">今天还没有任务，先安排一件重要的事吧。</p>
+          <p className="text-[15px] leading-[22px] text-[var(--color-text-secondary)]">今天还没有安排任务</p>
         ) : (
           <>
-            <div className="flex items-end justify-between gap-4">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-[24px] font-semibold">{summary.completed} / {summary.total}</div>
-                <div className="mt-1 text-sm text-[var(--color-text-secondary)]">还剩 {Math.max(0, summary.pending)} 项</div>
+                <div className="text-[13px] font-medium leading-[18px] text-[var(--color-text-secondary)]">今日进度</div>
+                <div className="mt-0.5 text-[17px] font-semibold">{summary.completed} / {summary.total}</div>
               </div>
-              <div className="text-lg font-semibold text-[var(--color-brand)]">{percent}%</div>
+              <div className="text-[28px] font-semibold leading-none text-[var(--color-text)]">{percent}%</div>
             </div>
             <div className="mt-3"><ProgressBar percent={percent} label="" /></div>
           </>
         )}
-      </CollapsibleSection>
+      </section>
 
-      <form className="flex min-h-12 items-center gap-2 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 shadow-[var(--shadow-soft)]" onSubmit={submitInlineQuick}>
+      <form className="flex h-12 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3" onSubmit={submitInlineQuick}>
         <Plus size={18} className="shrink-0 text-[var(--color-brand)]" />
         <input
-          className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-[var(--color-text-muted)]"
+          className="min-w-0 flex-1 bg-transparent text-[15px] leading-[22px] outline-none placeholder:text-[var(--color-text-muted)]"
           value={quickTitle}
           onChange={(event) => setQuickTitle(event.target.value)}
           placeholder="添加今天要做的事..."
@@ -313,19 +308,20 @@ export function TodayPage({
       </form>
 
       {summary.total === 0 ? (
-        <Card className="p-4 text-center">
-          <p className="text-[15px] font-semibold">今天还没有任务</p>
-          <Button className="mt-3" icon={<Plus size={18} />} onClick={() => setQuickOpen(true)}>添加一项</Button>
-        </Card>
+        <div className="flex min-h-[220px] flex-col items-center justify-center text-center">
+          <CalendarDays className="text-[var(--color-text-muted)]" size={30} strokeWidth={1.6} />
+          <p className="mt-3 text-[15px] font-medium">今天还没有任务</p>
+          <button className="mt-2 min-h-10 px-2 text-sm font-medium text-[var(--color-brand)]" onClick={() => setQuickOpen(true)}>添加第一项任务</button>
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {grouped.overdue.length > 0 && (
             <CollapsibleSection id="today-overdue" title="已逾期" count={grouped.overdue.length} defaultExpanded>
               <SectionTasks list={grouped.overdue} limit={3} {...taskListProps} />
             </CollapsibleSection>
           )}
           {grouped.pending.length > 0 && (
-            <CollapsibleSection id="today-pending" title="待完成" count={grouped.pending.length} defaultExpanded>
+            <CollapsibleSection id="today-pending" title="今天" count={grouped.pending.length} defaultExpanded>
               <SectionTasks list={grouped.pending} limit={5} {...taskListProps} />
             </CollapsibleSection>
           )}
@@ -343,10 +339,6 @@ export function TodayPage({
       )}
 
       <ReflectionPanel reflections={reflections} onSave={onSaveReflection} notify={notify} />
-
-      {summary.total > 0 && <button className="fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand)] text-white shadow-lg sm:hidden" onClick={() => setQuickOpen(true)} aria-label="快速添加">
-        <Plus size={26} />
-      </button>}
 
       <Modal title="添加任务" open={quickOpen} onClose={() => setQuickOpen(false)}>
         <form className="space-y-4 pb-1" onSubmit={submitQuickTask}>
