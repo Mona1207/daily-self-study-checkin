@@ -102,7 +102,7 @@ export function TaskCard({
   return (
     <>
       <article
-        className={`soft-card relative rounded-[16px] px-3 ${compact ? "py-2.5" : "py-3.5"} transition duration-[var(--motion-fast)] ${suggested && !completed ? "bg-gradient-to-r from-emerald-50/90 to-white/85 ring-1 ring-emerald-100 dark:from-emerald-500/12 dark:to-white/5 dark:ring-emerald-500/20" : ""} ${completed ? "opacity-78" : ""}`}
+        className={`soft-card relative rounded-[14px] px-3 ${compact ? "py-2.5" : "py-3"} transition duration-[var(--motion-fast)] ${suggested && !completed ? "bg-gradient-to-r from-emerald-50/90 to-white/85 ring-1 ring-emerald-100 dark:from-emerald-500/12 dark:to-white/5 dark:ring-emerald-500/20" : ""} ${completed ? "opacity-78" : ""}`}
         draggable={Boolean(onDragStart && onDropTask)}
         onDragStart={() => onDragStart?.(task)}
         onDragOver={(event) => event.preventDefault()}
@@ -117,7 +117,7 @@ export function TaskCard({
             </span>
           ) : null}
           <button
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] border text-sm transition ${
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border text-sm transition ${
               completed ? "border-[var(--color-success)] bg-[var(--color-success)] text-white shadow-[0_8px_18px_rgb(47_191_115_/_0.22)]" : "border-[#aaa6cf] bg-white/65 text-transparent hover:border-[var(--color-brand)] dark:bg-white/10"
             }`}
             onClick={() => (completed ? onUndo?.(task) : onComplete?.(task))}
@@ -127,11 +127,11 @@ export function TaskCard({
           </button>
 
           <button className="min-w-0 flex-1 text-left" onClick={() => setDetailsOpen(true)}>
-            <div className={`break-words text-[15px] font-bold leading-[22px] ${completed ? "text-[var(--color-text-muted)] line-through decoration-[0.8px]" : "text-[var(--color-text)]"}`}>
+            <div className={`break-words text-[14px] font-bold leading-[21px] ${completed ? "text-[var(--color-text-muted)] line-through decoration-[0.8px]" : "text-[var(--color-text)]"}`}>
               {task.title}
               {suggested && !completed ? <span className="ml-2 rounded-[8px] bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/15">建议先做</span> : null}
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2 overflow-hidden text-[13px] leading-[18px] text-[var(--color-text-secondary)]">
+            <div className="mt-1 flex flex-wrap items-center gap-1.5 overflow-hidden text-[12px] leading-[18px] text-[var(--color-text-secondary)]">
               <span className="inline-flex items-center gap-1">
                 <Clock3 size={14} />
                 {task.allDay || (!task.startTime && !task.dueTime) ? "全天" : task.dueTime ? `${task.dueTime}前` : task.startTime ? task.startTime : ""}

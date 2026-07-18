@@ -75,7 +75,7 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
     total: rangeTasks.filter((task) => task.subject === subject).length,
     completed: rangeTasks.filter((task) => task.subject === subject && task.status === "completed").length,
   })).filter((item) => item.total > 0);
-  const subjectColors = ["#7657f6", "#5f8df7", "#50c38a", "#ffa332", "#9b7cf7", "#26b7a6", "#ff7070", "#7d8ef0", "#a4a9bc"];
+  const subjectColors = ["var(--color-brand)", "var(--color-brand-2)", "#50c38a", "#ffa332", "#9b7cf7", "#26b7a6", "#ff7070", "#7d8ef0", "#a4a9bc"];
   const subjectTotal = bySubject.reduce((sum, item) => sum + item.total, 0);
   let subjectOffset = 0;
   const subjectGradient = bySubject.length
@@ -96,19 +96,19 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
   const hasData = daily.some((item) => item.total > 0);
 
   return (
-    <div className="space-y-5 pb-24">
-      <div className="morning-illustration -mx-[var(--page-x)] -mt-5 px-[var(--page-x)] pb-6 pt-5">
+    <div className="space-y-4 pb-20">
+      <div className="morning-illustration -mx-[var(--page-x)] -mt-4 px-[var(--page-x)] pb-4 pt-4">
         <div className="relative z-10">
-          <h1 className="text-[36px] font-black leading-tight">任务统计 <span className="text-xl text-amber-400">✦</span></h1>
-          <p className="mt-2 text-[15px] leading-6 text-[var(--color-text-secondary)]">回顾点滴进步，持续遇见更好的自己 <span className="text-amber-400">✦</span></p>
+          <h1 className="text-[30px] font-black leading-tight">任务统计 <span className="text-lg text-amber-400">✦</span></h1>
+          <p className="mt-2 text-[14px] leading-6 text-[var(--color-text-secondary)]">回顾点滴进步，持续遇见更好的自己 <span className="text-amber-400">✦</span></p>
         </div>
       </div>
 
-      <div className="flex h-12 gap-3 overflow-x-auto pb-1">
+      <div className="flex h-11 gap-2 overflow-x-auto pb-1">
         {(Object.keys(rangeLabel) as RangeKey[]).map((key) => (
           <button
             key={key}
-            className={`shrink-0 rounded-[16px] px-5 text-[15px] font-bold transition ${range === key ? "bg-gradient-to-r from-[#8c73ff] to-[#6847f2] text-white shadow-[0_12px_24px_rgb(104_71_242_/_0.2)]" : "soft-card text-[var(--color-text-secondary)]"}`}
+            className={`shrink-0 rounded-[14px] px-4 text-[14px] font-bold transition ${range === key ? "bg-[image:var(--brand-gradient)] text-white shadow-[var(--brand-shadow)]" : "soft-card text-[var(--color-text-secondary)]"}`}
             onClick={() => setRange(key)}
           >
             {key === "custom" ? <span className="inline-flex items-center gap-2"><CalendarDays size={17} />自定义日期</span> : rangeLabel[key]}
@@ -122,12 +122,12 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
         </div>
       )}
 
-      <section className="grid grid-cols-3 gap-3">
+      <section className="grid grid-cols-3 gap-2.5">
           <div className="soft-card rounded-[18px] bg-[var(--color-brand-soft)]/70 p-3">
             <div className="flex items-center gap-1 text-xs font-bold text-[var(--color-text-secondary)]">完成率 <HelpCircle size={14} /></div>
             <div className="mt-4 flex items-center justify-between gap-2">
               <div className="text-[27px] font-black text-[var(--color-brand)]">{completionRate}%</div>
-              <div className="h-10 w-10 shrink-0 rounded-full" style={{ background: `conic-gradient(var(--color-brand) ${completionRate * 3.6}deg, rgb(118 87 246 / 0.14) 0deg)` }} />
+              <div className="h-10 w-10 shrink-0 rounded-full" style={{ background: `conic-gradient(var(--color-brand) ${completionRate * 3.6}deg, rgb(var(--color-brand-rgb) / 0.14) 0deg)` }} />
             </div>
             <div className="mt-3 text-xs text-[var(--color-text-secondary)]">较上周期 <span className="text-rose-500">↑ {Math.max(1, Math.round(completionRate / 6))}%</span></div>
           </div>
@@ -169,7 +169,7 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
                   />
                 </g>
               ))}
-              <polygon points={`${chartPath} ${chartPoints[chartPoints.length - 1]?.x ?? chartPadX},${chartHeight - chartPadY} ${chartPoints[0]?.x ?? chartPadX},${chartHeight - chartPadY}`} fill="rgb(118 87 246 / 0.1)" />
+              <polygon points={`${chartPath} ${chartPoints[chartPoints.length - 1]?.x ?? chartPadX},${chartHeight - chartPadY} ${chartPoints[0]?.x ?? chartPadX},${chartHeight - chartPadY}`} fill="rgb(var(--color-brand-rgb) / 0.1)" />
               <polyline points={chartPath} fill="none" stroke="var(--color-brand)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
               {chartPoints.map((point) => (
                 <g key={point.date}>

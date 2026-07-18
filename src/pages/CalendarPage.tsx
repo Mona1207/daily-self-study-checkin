@@ -88,20 +88,20 @@ export function CalendarPage({ tasks, settings, reflections = [], initialDate, o
   };
 
   return (
-    <div className="space-y-5 pb-24">
-      <div className="morning-illustration -mx-[var(--page-x)] -mt-5 px-[var(--page-x)] pb-8 pt-5">
+    <div className="space-y-4 pb-20">
+      <div className="morning-illustration -mx-[var(--page-x)] -mt-4 px-[var(--page-x)] pb-5 pt-4">
         <div className="relative z-10 flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-[40px] font-black leading-tight">日历 <span className="text-xl text-amber-400">✦</span></h1>
-            <p className="mt-2 text-[16px] leading-6 text-[var(--color-text-secondary)]">回顾每一天，见证成长的足迹 <span className="text-amber-400">✦</span></p>
+          <h1 className="text-[28px] font-black leading-tight">日历 <span className="text-base text-amber-400">✦</span></h1>
+            <p className="mt-2 text-[14px] leading-6 text-[var(--color-text-secondary)]">回顾每一天，见证成长的足迹 <span className="text-amber-400">✦</span></p>
           </div>
-          {onAddTask && <button className="mt-7 flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-white/85 text-[var(--color-brand)] shadow-[var(--shadow-soft)] dark:bg-white/10" onClick={() => setAddOpen(true)} aria-label="添加任务"><CalendarDays size={28} /></button>}
+          {onAddTask && <button className="mt-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-white/85 text-[var(--color-brand)] shadow-[var(--shadow-soft)] dark:bg-white/10" onClick={() => setAddOpen(true)} aria-label="添加任务"><CalendarDays size={23} /></button>}
         </div>
       </div>
 
-      <div className="-mt-9 grid gap-5">
+      <div className="-mt-5 grid gap-4">
         <Card
-          className="rounded-[22px] p-4"
+          className="rounded-[16px] p-2.5"
           onTouchStart={(event) => { touchStartX.current = event.changedTouches[0]?.clientX ?? null; }}
           onTouchEnd={(event) => {
             if (touchStartX.current === null) return;
@@ -110,25 +110,25 @@ export function CalendarPage({ tasks, settings, reflections = [], initialDate, o
             if (Math.abs(diff) > 80) changeMonth(diff > 0 ? -1 : 1);
           }}
         >
-          <div className="mb-4 flex h-12 items-center justify-between gap-3">
-            <button className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[var(--color-brand-soft)] text-[var(--color-brand)] hover:bg-[var(--color-brand-soft)]" onClick={() => changeMonth(-1)} aria-label="上个月">
+          <div className="mb-1.5 flex h-9 items-center justify-between gap-3">
+            <button className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[var(--color-brand-soft)] text-[var(--color-brand)] hover:bg-[var(--color-brand-soft)]" onClick={() => changeMonth(-1)} aria-label="上个月">
               <ChevronLeft size={18} />
             </button>
             <div className="text-center">
-              <h2 className="text-[25px] font-black">
+              <h2 className="text-[19px] font-black">
                 {monthCursor.getFullYear()}年{monthCursor.getMonth() + 1}月
               </h2>
               {(toDateString(monthCursor).slice(0, 7) !== today.slice(0, 7) || selectedDate !== today) && (
                 <button className="mt-1 text-sm text-[var(--color-brand)]" onClick={() => { setMonthCursor(new Date()); selectDate(today); }}>返回今天</button>
               )}
             </div>
-            <button className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[var(--color-brand-soft)] text-[var(--color-brand)] hover:bg-[var(--color-brand-soft)]" onClick={() => changeMonth(1)} aria-label="下个月">
+            <button className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[var(--color-brand-soft)] text-[var(--color-brand)] hover:bg-[var(--color-brand-soft)]" onClick={() => changeMonth(1)} aria-label="下个月">
               <ChevronRight size={18} />
             </button>
           </div>
-          <div className="grid grid-cols-7 text-center text-[15px] font-medium text-[var(--color-text-secondary)]">
+          <div className="grid grid-cols-7 text-center text-[12px] font-medium text-[var(--color-text-secondary)]">
             {["日", "一", "二", "三", "四", "五", "六"].map((day) => (
-              <div key={day} className="py-1.5">
+              <div key={day} className="py-1">
                 {day}
               </div>
             ))}
@@ -146,9 +146,9 @@ export function CalendarPage({ tasks, settings, reflections = [], initialDate, o
                 <button
                   key={dateString}
                   onClick={() => selectDate(dateString)}
-                  className={`mx-auto flex h-[62px] w-11 flex-col items-center justify-center rounded-[16px] text-[18px] font-medium transition ${
+                  className={`mx-auto flex h-10 w-8 flex-col items-center justify-center rounded-[11px] text-[14px] font-semibold transition ${
                     active
-                      ? "bg-gradient-to-br from-[#8c73ff] to-[#6847f2] text-white shadow-[0_12px_24px_rgb(104_71_242_/_0.26)]"
+                      ? "bg-[image:var(--brand-gradient)] text-white shadow-[var(--brand-shadow)]"
                       : current
                         ? "border border-[var(--color-brand)] bg-[var(--color-brand-soft)] text-[var(--color-brand)]"
                         : "bg-transparent hover:bg-[var(--color-surface-muted)]"
@@ -161,12 +161,12 @@ export function CalendarPage({ tasks, settings, reflections = [], initialDate, o
                       className={`mt-1 h-1.5 w-1.5 rounded-full ${dotClass[summary.status]} ${active ? "ring-2 ring-white" : ""}`}
                     />
                   )}
-                  {reflection && MoodIcon && <MoodIcon className={`mt-1 ${active ? "text-white" : moodClass[reflection.mood]}`} size={15} strokeWidth={2.3} aria-label="有小记" />}
+                  {reflection && MoodIcon && <MoodIcon className={`mt-0.5 ${active ? "text-white" : moodClass[reflection.mood]}`} size={13} strokeWidth={2.3} aria-label="有小记" />}
                 </button>
               );
             })}
           </div>
-          <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm text-[var(--color-text-secondary)]">
+          <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-[var(--color-text-secondary)]">
             <span className="inline-flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-emerald-500" />全部完成</span>
             <span className="inline-flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-orange-400" />部分完成</span>
             <span className="inline-flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-slate-400" />没有完成</span>
@@ -175,7 +175,7 @@ export function CalendarPage({ tasks, settings, reflections = [], initialDate, o
         </Card>
 
         <div className="space-y-4" ref={taskAreaRef}>
-          <div className="soft-card rounded-[20px] p-4">
+          <div className="soft-card rounded-[18px] p-3">
             <div className="flex min-h-11 items-center justify-between gap-3">
             <div className="min-w-0 text-[15px] leading-[22px]">
               <span className="font-black">{formatChineseDate(new Date(selectedDate))}</span>
@@ -183,10 +183,10 @@ export function CalendarPage({ tasks, settings, reflections = [], initialDate, o
             </div>
             {onAddTask && <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand)] text-white" onClick={() => setAddOpen(true)} aria-label="添加任务"><Plus size={18} /></button>}
             </div>
-            <div className="mt-3 grid grid-cols-3 rounded-[16px] bg-white/70 px-3 py-3 text-center dark:bg-white/10">
-              <div><div className="text-[22px] font-black">{selectedSummary.total}</div><div className="text-xs text-[var(--color-text-secondary)]">总任务</div></div>
-              <div className="border-x border-[var(--color-border)]"><div className="text-[22px] font-black text-[var(--color-success)]">{selectedSummary.completed}</div><div className="text-xs text-[var(--color-text-secondary)]">已完成</div></div>
-              <div><div className="text-[22px] font-black text-[var(--color-warning)]">{Math.max(0, selectedSummary.total - selectedSummary.completed)}</div><div className="text-xs text-[var(--color-text-secondary)]">未完成</div></div>
+            <div className="mt-2 grid grid-cols-3 rounded-[14px] bg-white/70 px-3 py-2.5 text-center dark:bg-white/10">
+              <div><div className="text-[20px] font-black">{selectedSummary.total}</div><div className="text-xs text-[var(--color-text-secondary)]">总任务</div></div>
+              <div className="border-x border-[var(--color-border)]"><div className="text-[20px] font-black text-[var(--color-success)]">{selectedSummary.completed}</div><div className="text-xs text-[var(--color-text-secondary)]">已完成</div></div>
+              <div><div className="text-[20px] font-black text-[var(--color-warning)]">{Math.max(0, selectedSummary.total - selectedSummary.completed)}</div><div className="text-xs text-[var(--color-text-secondary)]">未完成</div></div>
             </div>
           </div>
           {onSaveReflection && notify && <ReflectionPanel date={selectedDate} reflections={reflections} onSave={onSaveReflection} notify={notify} />}

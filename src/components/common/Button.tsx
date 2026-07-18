@@ -8,7 +8,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-gradient-to-r from-[#7d61ff] to-[#6847f2] text-white shadow-[0_12px_24px_rgb(104_71_242_/_0.22)] hover:brightness-105 active:brightness-95",
+  primary: "bg-[image:var(--brand-gradient)] text-white shadow-[var(--brand-shadow)] hover:brightness-105 active:brightness-95",
   secondary: "bg-white/80 text-[var(--color-text)] ring-1 ring-[var(--color-border)] hover:bg-white active:brightness-95 dark:bg-white/10 dark:hover:bg-white/15",
   ghost: "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] active:brightness-95",
   danger: "bg-transparent text-[var(--color-danger)] ring-1 ring-[var(--color-border)] hover:bg-red-50 active:brightness-95 dark:hover:bg-red-500/10",

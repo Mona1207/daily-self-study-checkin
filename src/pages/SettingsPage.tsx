@@ -204,58 +204,58 @@ export function SettingsPage({
     ];
 
     return (
-      <div className="space-y-5 pb-24">
-        <div className="morning-illustration -mx-[var(--page-x)] -mt-5 px-[var(--page-x)] pb-8 pt-12">
+      <div className="space-y-4 pb-20">
+        <div className="morning-illustration -mx-[var(--page-x)] -mt-4 px-[var(--page-x)] pb-5 pt-8">
           <div className="relative z-10">
-            <h1 className="text-[38px] font-black leading-tight">我的</h1>
+            <h1 className="text-[32px] font-black leading-tight">我的</h1>
           </div>
         </div>
 
-        <section className="soft-card -mt-10 flex min-h-[112px] items-center gap-4 rounded-[22px] p-4">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#efeaff] to-[#d9d0ff] text-[var(--color-brand)]">
-            <CircleUserRound size={52} strokeWidth={1.5} />
+        <section className="soft-card -mt-6 flex min-h-[96px] items-center gap-3 rounded-[18px] p-3.5">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-soft)] text-[var(--color-brand)]">
+            <CircleUserRound size={42} strokeWidth={1.5} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h2 className="truncate text-[24px] font-black">{settings.userName || settings.studentName || "小清清"}</h2>
+              <h2 className="truncate text-[22px] font-black">{settings.userName || settings.studentName || "小清清"}</h2>
               <span className="rounded-[8px] bg-[var(--color-brand-soft)] px-2 py-1 text-xs font-black text-[var(--color-brand)]">LV.6</span>
             </div>
-            <p className="mt-2 truncate text-[15px] text-[var(--color-text-secondary)]">专注当下，成就更好的自己 ✨</p>
+            <p className="mt-1.5 truncate text-[14px] text-[var(--color-text-secondary)]">专注当下，成就更好的自己 ✨</p>
           </div>
-          <ChevronRight className="text-[var(--color-text-muted)]" size={24} />
+          <ChevronRight className="text-[var(--color-text-muted)]" size={22} />
         </section>
 
-        <section className="soft-card rounded-[22px] bg-[var(--color-brand-soft)]/70 p-4">
+        <section className="soft-card rounded-[18px] bg-[var(--color-brand-soft)]/70 p-3.5">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-soft)] text-[var(--color-brand)]"><Moon size={34} fill="currentColor" /></div>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-soft)] text-[var(--color-brand)]"><Moon size={30} fill="currentColor" /></div>
             <div className="min-w-0 flex-1">
               <div className="text-sm text-[var(--color-text-secondary)]">已坚持</div>
-              <div className="mt-1 text-[34px] font-black leading-none text-[var(--color-brand)]">{activeDays}<span className="ml-1 text-base text-[var(--color-text)]">天</span></div>
+              <div className="mt-1 text-[30px] font-black leading-none text-[var(--color-brand)]">{activeDays}<span className="ml-1 text-base text-[var(--color-text)]">天</span></div>
             </div>
             <div className="shrink-0 text-right text-sm text-[var(--color-text-secondary)]">累计完成 {completedCount}</div>
           </div>
-          <div className="mt-4 flex justify-between gap-2">
+          <div className="mt-3 flex justify-between gap-2">
             {["一", "二", "三", "四", "五", "六", "今"].map((day, index) => (
-              <span key={day} className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold ${index === 6 ? "bg-[var(--color-brand)] text-white shadow-[0_8px_18px_rgb(104_71_242_/_0.26)]" : "bg-white/75 text-[var(--color-brand)] dark:bg-white/10"}`}>
+              <span key={day} className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${index === 6 ? "bg-[var(--color-brand)] text-white shadow-[var(--brand-shadow)]" : "bg-white/75 text-[var(--color-brand)] dark:bg-white/10"}`}>
                 {index < 6 ? "✓" : day}
               </span>
             ))}
           </div>
         </section>
 
-        <section className="soft-card overflow-hidden rounded-[20px] px-4">
+        <section className="soft-card overflow-hidden rounded-[18px] px-3.5">
           {menuItems.map((item) => (
-            <button key={`${item.title}-${item.key}`} className="flex min-h-[62px] w-full items-center gap-4 border-b border-[var(--color-border)] text-left last:border-b-0" onClick={() => setPanel(item.key)}>
-              <span className={`flex h-10 w-10 items-center justify-center ${item.tone}`}>{item.icon}</span>
-              <span className="min-w-0 flex-1 text-[18px] font-bold text-[var(--color-text)]">{item.title}</span>
+            <button key={`${item.title}-${item.key}`} className="flex min-h-[56px] w-full items-center gap-3 border-b border-[var(--color-border)] text-left last:border-b-0" onClick={() => setPanel(item.key)}>
+              <span className={`flex h-9 w-9 items-center justify-center ${item.tone}`}>{item.icon}</span>
+              <span className="min-w-0 flex-1 text-[16px] font-bold text-[var(--color-text)]">{item.title}</span>
               <ChevronRight className="text-[var(--color-text-muted)]" size={21} />
             </button>
           ))}
         </section>
 
-        <section className="soft-card morning-illustration rounded-[18px] p-4">
-          <div className="relative z-10 pl-16">
-            <h2 className="text-[17px] font-black">感谢你与今日清单一起成长 🌱</h2>
+        <section className="soft-card rounded-[16px] p-4">
+          <div>
+            <h2 className="text-[16px] font-black">感谢你与今日清单一起成长 🌱</h2>
             <p className="mt-2 text-sm text-[var(--color-text-secondary)]">愿你每天都比昨天更进步一点点</p>
           </div>
         </section>

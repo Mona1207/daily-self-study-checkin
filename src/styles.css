@@ -5,6 +5,8 @@
 :root {
   color-scheme: light;
   --color-brand: #7657f6;
+  --color-brand-2: #5f86f7;
+  --color-brand-rgb: 118 87 246;
   --color-brand-soft: #f0edff;
   --color-success: #2fbf73;
   --color-success-soft: #e9f8ee;
@@ -23,12 +25,17 @@
   --radius-md: 16px;
   --radius-lg: 18px;
   --radius-xl: 24px;
-  --page-x: 18px;
-  --gap-card: 14px;
-  --button-height: 44px;
-  --nav-height: 76px;
-  --shadow-soft: 0 10px 34px rgb(42 35 84 / 0.08);
-  --shadow-float: 0 18px 48px rgb(42 35 84 / 0.17);
+  --page-x: 16px;
+  --gap-card: 12px;
+  --button-height: 42px;
+  --nav-height: 68px;
+  --shadow-soft: 0 8px 24px rgb(42 35 84 / 0.07);
+  --shadow-float: 0 14px 34px rgb(42 35 84 / 0.14);
+  --brand-gradient: linear-gradient(135deg, var(--color-brand), var(--color-brand-2));
+  --brand-shadow: 0 10px 22px rgb(var(--color-brand-rgb) / 0.2);
+  --page-bg:
+    radial-gradient(circle at 14% 0%, rgb(var(--color-brand-rgb) / 0.1), transparent 30%),
+    linear-gradient(180deg, #fffdfb 0%, var(--color-page) 48%, #f8fbff 100%);
   --motion-fast: 160ms;
   --motion-normal: 220ms;
   font-family:
@@ -49,44 +56,55 @@
   --color-warning-soft: rgb(241 154 62 / 0.14);
   --shadow-soft: 0 14px 36px rgb(0 0 0 / 0.18);
   --shadow-float: 0 10px 28px rgb(0 0 0 / 0.22);
+  --page-bg:
+    radial-gradient(circle at 14% 0%, rgb(var(--color-brand-rgb) / 0.18), transparent 30%),
+    linear-gradient(180deg, #151421 0%, #11101a 60%, #10131a 100%);
 }
 
 [data-theme-color="sky"] {
   --color-brand: #2698ea;
+  --color-brand-2: #6fb7f4;
+  --color-brand-rgb: 38 152 234;
   --color-brand-soft: #e9f5ff;
+  --color-border: rgb(38 152 234 / 0.14);
+  --color-page: #f7fbff;
 }
 
 [data-theme-color="teal"] {
   --color-brand: #18a999;
+  --color-brand-2: #51c987;
+  --color-brand-rgb: 24 169 153;
   --color-brand-soft: #e9fbf8;
+  --color-border: rgb(24 169 153 / 0.14);
+  --color-page: #f7fffc;
 }
 
 [data-theme-color="orange"] {
   --color-brand: #f28a2e;
+  --color-brand-2: #f2b84b;
+  --color-brand-rgb: 242 138 46;
   --color-brand-soft: #fff2e5;
+  --color-border: rgb(242 138 46 / 0.16);
+  --color-page: #fffaf3;
 }
 
 html {
   background: var(--color-page);
+  overscroll-behavior-x: none;
 }
 
 body {
   min-width: 320px;
   margin: 0;
   overflow-x: hidden;
-  background:
-    radial-gradient(circle at 16% 3%, rgb(239 231 255 / 0.8), transparent 30%),
-    radial-gradient(circle at 86% 2%, rgb(255 239 214 / 0.85), transparent 34%),
-    linear-gradient(180deg, #fffdf8 0%, #fbf9ff 48%, #f8fbff 100%);
+  background: var(--page-bg);
   color: var(--color-text);
+  overscroll-behavior-x: none;
   -webkit-tap-highlight-color: transparent;
 }
 
 .dark body {
-  background:
-    radial-gradient(circle at 16% 3%, rgb(92 74 174 / 0.28), transparent 30%),
-    radial-gradient(circle at 86% 2%, rgb(145 96 44 / 0.18), transparent 34%),
-    linear-gradient(180deg, #151421 0%, #11101a 60%, #10131a 100%);
+  background: var(--page-bg);
 }
 
 button,
@@ -122,28 +140,12 @@ button {
   content: "";
   pointer-events: none;
   background:
-    linear-gradient(90deg, rgb(255 255 255 / 0) 0 62%, rgb(255 247 235 / 0.76) 62% 100%),
-    radial-gradient(circle at 80% 60%, rgb(153 202 111 / 0.2), transparent 18%),
-    radial-gradient(circle at 85% 22%, rgb(255 255 255 / 0.95), transparent 15%);
+    radial-gradient(circle at 12% 4%, rgb(var(--color-brand-rgb) / 0.1), transparent 30%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.22), transparent 78%);
 }
 
 .morning-illustration::after {
-  position: absolute;
-  right: 16px;
-  top: 22px;
-  width: 118px;
-  height: 92px;
-  content: "";
-  pointer-events: none;
-  opacity: 0.8;
-  background:
-    radial-gradient(ellipse at 36% 48%, #8fbc62 0 6px, transparent 7px),
-    radial-gradient(ellipse at 48% 38%, #a7c979 0 7px, transparent 8px),
-    radial-gradient(ellipse at 58% 52%, #93bb68 0 6px, transparent 7px),
-    linear-gradient(#d3b59f, #d3b59f) 48px 57px / 26px 20px no-repeat,
-    linear-gradient(90deg, transparent 0 43px, #8fa36b 43px 45px, transparent 45px) 0 30px / 100% 42px no-repeat,
-    linear-gradient(90deg, rgb(243 208 177 / 0.72), rgb(255 255 255 / 0.4)) 28px 78px / 72px 8px no-repeat;
-  border-radius: 20px;
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -194,38 +194,38 @@ export function TodayPage({
   };
 
   return (
-    <div className="space-y-5 pb-24">
-      <header className="morning-illustration -mx-[var(--page-x)] -mt-5 px-[var(--page-x)] pb-5 pt-5">
+    <div className="space-y-4 pb-20">
+      <header className="morning-illustration -mx-[var(--page-x)] -mt-4 px-[var(--page-x)] pb-4 pt-4">
         <div className="relative z-10 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-[36px] font-black leading-tight tracking-normal">今日清单 <span className="text-xl text-amber-400">✦</span></h1>
+            <h1 className="text-[30px] font-black leading-tight tracking-normal">今日清单 <span className="text-lg text-amber-400">✦</span></h1>
             <button className="mt-3 text-left" onClick={onGoCalendar}>
-              <div className="text-[23px] font-black leading-tight">{todayDate.getFullYear()}年{todayDate.getMonth() + 1}月{todayDate.getDate()}日 <span className="text-[21px]">{getWeekdayName(todayDate)}</span></div>
+              <div className="text-[20px] font-black leading-tight">{todayDate.getFullYear()}年{todayDate.getMonth() + 1}月{todayDate.getDate()}日 <span className="text-[18px]">{getWeekdayName(todayDate)}</span></div>
             </button>
-            <p className="mt-4 text-[15px] leading-6 text-[var(--color-text-secondary)]">{getGreeting()}，专注当下，成就更好的自己 <span className="text-amber-400">✦</span></p>
+            <p className="mt-3 text-[14px] leading-6 text-[var(--color-text-secondary)]">{getGreeting()}，专注当下，成就更好的自己 <span className="text-amber-400">✦</span></p>
           </div>
-          <button className="mt-11 flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#8c73ff] to-[#6847f2] text-white shadow-[0_16px_32px_rgb(104_71_242_/_0.28)]" onClick={() => setQuickOpen(true)} aria-label="添加任务">
-            <Plus size={29} />
+          <button className="mt-8 flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-[image:var(--brand-gradient)] text-white shadow-[var(--brand-shadow)]" onClick={() => setQuickOpen(true)} aria-label="添加任务">
+            <Plus size={26} />
           </button>
         </div>
       </header>
 
-      <section className="soft-card -mt-6 grid grid-cols-3 rounded-[22px] px-3 py-4">
+      <section className="soft-card -mt-4 grid grid-cols-3 rounded-[18px] px-3 py-3">
         <div className="flex items-center justify-center gap-2">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-soft)] text-[var(--color-brand)]"><ClipboardList size={21} /></span>
-          <span><strong className="block text-[23px] leading-7">{summary.total}</strong><span className="whitespace-nowrap text-[11px] text-[var(--color-text-secondary)]">今日任务</span></span>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-soft)] text-[var(--color-brand)]"><ClipboardList size={19} /></span>
+          <span><strong className="block text-[21px] leading-6">{summary.total}</strong><span className="whitespace-nowrap text-[11px] text-[var(--color-text-secondary)]">今日任务</span></span>
         </div>
         <div className="flex items-center justify-center gap-2 border-x border-[var(--color-border)] px-2">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-success-soft)] text-[var(--color-success)]"><CheckCircle2 size={22} /></span>
-          <span><strong className="block text-[23px] leading-7">{summary.completed}</strong><span className="whitespace-nowrap text-[11px] text-[var(--color-text-secondary)]">已完成</span></span>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-success-soft)] text-[var(--color-success)]"><CheckCircle2 size={20} /></span>
+          <span><strong className="block text-[21px] leading-6">{summary.completed}</strong><span className="whitespace-nowrap text-[11px] text-[var(--color-text-secondary)]">已完成</span></span>
         </div>
         <div className="flex items-center justify-center gap-2 pl-2">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-warning-soft)] text-[var(--color-warning)]"><Clock3 size={22} /></span>
-          <span><strong className="block text-[23px] leading-7">{Math.max(0, summary.total - summary.completed)}</strong><span className="whitespace-nowrap text-[11px] text-[var(--color-text-secondary)]">未完成</span></span>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-warning-soft)] text-[var(--color-warning)]"><Clock3 size={20} /></span>
+          <span><strong className="block text-[21px] leading-6">{Math.max(0, summary.total - summary.completed)}</strong><span className="whitespace-nowrap text-[11px] text-[var(--color-text-secondary)]">未完成</span></span>
         </div>
       </section>
 
-      <section className="soft-card rounded-[18px] px-4 py-3">
+      <section className="soft-card rounded-[16px] px-4 py-3">
         {summary.total === 0 ? (
           <p className="text-[15px] leading-[22px] text-[var(--color-text-secondary)]">今天还没有安排任务</p>
         ) : (
@@ -235,14 +235,14 @@ export function TodayPage({
                 <div className="text-[13px] font-semibold leading-[18px] text-[var(--color-text-secondary)]">今日进度</div>
                 <div className="mt-0.5 text-[17px] font-bold">{summary.completed} / {summary.total}</div>
               </div>
-              <div className="text-[28px] font-black leading-none text-[var(--color-brand)]">{percent}%</div>
+              <div className="text-[24px] font-black leading-none text-[var(--color-brand)]">{percent}%</div>
             </div>
             <div className="mt-3"><ProgressBar percent={percent} label="" /></div>
           </>
         )}
       </section>
 
-      <form className="soft-card flex min-h-[52px] items-center gap-2 rounded-[18px] px-3 py-2" onSubmit={submitInlineQuick}>
+      <form className="soft-card flex min-h-[48px] items-center gap-2 rounded-[16px] px-3 py-2" onSubmit={submitInlineQuick}>
         <Sparkles size={18} className="shrink-0 text-[var(--color-brand)]" />
         <input
           className="min-w-0 flex-1 bg-transparent text-[15px] leading-[22px] outline-none placeholder:text-[var(--color-text-muted)]"
@@ -257,7 +257,7 @@ export function TodayPage({
       </form>
 
       <div className="flex items-center justify-between">
-        <h2 className="text-[20px] font-black">今天的任务</h2>
+        <h2 className="text-[18px] font-black">今天的任务</h2>
         <button className="text-sm font-semibold text-[var(--color-text-secondary)]" onClick={onGoCalendar}>按时间⌄</button>
       </div>
 

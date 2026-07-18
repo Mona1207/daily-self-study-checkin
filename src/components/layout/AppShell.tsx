@@ -21,12 +21,12 @@ const navItems: Array<{ key: PageKey; label: string; icon: typeof ListTodo }> = 
 export function AppShell({ activePage, onNavigate, settings, children }: AppShellProps) {
   return (
     <div className="min-h-screen text-[var(--color-text)]" data-density={settings.layoutDensity ?? (settings.compactLayout ? "compact" : "standard")}>
-      <main className="min-h-screen pb-[calc(var(--nav-height)+env(safe-area-inset-bottom)+20px)] pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto w-full max-w-[430px] px-[var(--page-x)] py-5 sm:py-7">{children}</div>
+      <main className="min-h-screen pb-[calc(var(--nav-height)+env(safe-area-inset-bottom)+16px)] pt-[env(safe-area-inset-top)]">
+        <div className="mx-auto w-full max-w-[410px] px-[var(--page-x)] py-4 sm:py-6">{children}</div>
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2">
-        <div className="soft-card mx-auto grid max-w-[430px] grid-cols-4 gap-1 rounded-t-[28px] border-b-0 px-3 py-2">
+        <div className="soft-card mx-auto grid max-w-[410px] grid-cols-4 gap-1 rounded-t-[22px] border-b-0 px-3 py-1.5">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = activePage === item.key;
@@ -34,7 +34,7 @@ export function AppShell({ activePage, onNavigate, settings, children }: AppShel
               <button
                 key={item.key}
                 onClick={() => onNavigate(item.key)}
-                className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[16px] text-[11px] font-semibold transition duration-[var(--motion-fast)] ${
+                className={`relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-[14px] text-[11px] font-semibold transition duration-[var(--motion-fast)] ${
                   active
                     ? "text-[var(--color-brand)]"
                     : "text-[var(--color-text-secondary)] hover:bg-white/60 dark:hover:bg-white/10"
@@ -43,7 +43,7 @@ export function AppShell({ activePage, onNavigate, settings, children }: AppShel
                 aria-label={`切换到${item.label}`}
               >
                 <span className={active ? "flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-brand-soft)]" : "flex h-7 w-7 items-center justify-center"}>
-                  <Icon size={22} strokeWidth={active ? 2.3 : 1.9} />
+                  <Icon size={21} strokeWidth={active ? 2.3 : 1.9} />
                 </span>
                 <span>{item.label}</span>
               </button>

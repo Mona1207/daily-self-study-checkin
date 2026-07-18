@@ -290,16 +290,16 @@ export function TaskEditorSheet({ open, mode = "create", task, initialDate, onCl
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 backdrop-blur-sm" role="dialog" aria-modal="true" onMouseDown={requestClose}>
       <form
-        className="flex max-h-[100dvh] min-h-[100dvh] w-full max-w-[430px] flex-col bg-[var(--color-page)] shadow-[var(--shadow-float)] sm:max-h-[92dvh] sm:min-h-0 sm:rounded-[28px]"
+        className="flex max-h-[100dvh] min-h-[100dvh] w-full max-w-[410px] flex-col bg-[var(--color-page)] shadow-[var(--shadow-float)] sm:max-h-[92dvh] sm:min-h-0 sm:rounded-[24px]"
         onSubmit={submit}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="morning-illustration shrink-0 px-4 pb-5 pt-[max(18px,env(safe-area-inset-top))]">
-          <div className="relative z-10 flex h-14 items-center justify-between gap-3">
+        <header className="morning-illustration shrink-0 px-4 pb-3 pt-[max(14px,env(safe-area-inset-top))]">
+          <div className="relative z-10 flex h-12 items-center justify-between gap-3">
           <button type="button" className="flex h-11 w-11 items-center justify-center rounded-[14px] text-[var(--color-text)] hover:bg-white/60 dark:hover:bg-white/10" onClick={requestClose} aria-label="关闭">
             <X size={20} />
           </button>
-          <h2 className="text-[23px] font-black text-[var(--color-text)]">{title}</h2>
+          <h2 className="text-[21px] font-black text-[var(--color-text)]">{title}</h2>
           <button
             type="submit"
             className="min-h-10 rounded-[12px] px-3 text-[15px] font-bold text-[var(--color-brand)] disabled:text-[var(--color-text-muted)]"
@@ -310,9 +310,9 @@ export function TaskEditorSheet({ open, mode = "create", task, initialDate, onCl
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          <div className="space-y-5">
-            <section className="soft-card rounded-[18px] px-3 py-3">
+        <div className="flex-1 overflow-y-auto px-4 py-3">
+          <div className="space-y-4">
+            <section className="soft-card rounded-[16px] px-3 py-3">
               <input
                 autoFocus
                 className="min-h-14 w-full bg-transparent text-[20px] font-semibold leading-7 text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)]"
@@ -502,10 +502,10 @@ export function TaskEditorSheet({ open, mode = "create", task, initialDate, onCl
             </section>
           </div>
         </div>
-        <div className="shrink-0 px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-2">
+        <div className="shrink-0 px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-2">
           <button
             type="submit"
-            className="flex min-h-[56px] w-full items-center justify-center rounded-[18px] bg-gradient-to-r from-[#8c73ff] to-[#6847f2] text-[18px] font-black text-white shadow-[0_16px_32px_rgb(104_71_242_/_0.28)] disabled:opacity-50"
+            className="flex min-h-[52px] w-full items-center justify-center rounded-[16px] bg-[image:var(--brand-gradient)] text-[17px] font-black text-white shadow-[var(--brand-shadow)] disabled:opacity-50"
             disabled={!draft.title.trim() || saving}
           >
             {saving ? "保存中" : "保存任务"}

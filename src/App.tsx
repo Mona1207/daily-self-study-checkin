@@ -70,6 +70,38 @@ export default function App() {
   }, [database, replaceDatabase, settings]);
 
   useEffect(() => {
+    const rootState = { ...(window.history.state ?? {}), appExitGuardRoot: true };
+    window.history.replaceState(rootState, "");
+    window.history.pushState({ appExitGuardTop: true }, "");
+    let edgeTouchStart: { x: number; y: number } | null = null;
+
+    const keepAppOpenOnBackSwipe = (event: PopStateEvent) => {
+      if (event.state?.appExitGuardRoot) window.history.pushState({ appExitGuardTop: true }, "");
+    };
+    const handleTouchStart = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      edgeTouchStart = touch && touch.clientX < 24 ? { x: touch.clientX, y: touch.clientY } : null;
+    };
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!edgeTouchStart) return;
+      const touch = event.touches[0];
+      if (!touch) return;
+      const dx = touch.clientX - edgeTouchStart.x;
+      const dy = Math.abs(touch.clientY - edgeTouchStart.y);
+      if (dx > 8 && dx > dy) event.preventDefault();
+    };
+
+    window.addEventListener("popstate", keepAppOpenOnBackSwipe);
+    document.addEventListener("touchstart", handleTouchStart, { passive: true });
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+    return () => {
+      window.removeEventListener("popstate", keepAppOpenOnBackSwipe);
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchmove", handleTouchMove);
+    };
+  }, []);
+
+  useEffect(() => {
     if (database.recurringTemplates.length === 0) return;
     const created = generateRecurringTasks();
     if (created > 0) notify("info", `已生成 ${created} 个重复任务。`);
