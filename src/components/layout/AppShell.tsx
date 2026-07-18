@@ -25,7 +25,7 @@ export function AppShell({ activePage, onNavigate, settings, children }: AppShel
         <div className="mx-auto w-full max-w-3xl px-[var(--page-x)] py-4 sm:py-6">{children}</div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 px-3 pb-[max(6px,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-page)]/95 px-3 pb-[max(6px,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur">
         <div className="mx-auto grid max-w-3xl grid-cols-4 gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;

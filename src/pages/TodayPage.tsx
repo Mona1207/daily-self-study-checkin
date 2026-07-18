@@ -72,7 +72,7 @@ const SectionTasks = ({
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? list : list.slice(0, limit);
   return (
-    <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">
+    <div className="overflow-visible rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">
       {visible.map((task) => (
         <TaskCard
           key={task.id}

@@ -1,9 +1,10 @@
-import { useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { AppSettings, DailyReflection, StudyTask } from "../types/task";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Frown, Laugh, Meh, Plus, Smile, SmilePlus } from "lucide-react";
+import { AppSettings, DailyMood, DailyReflection, StudyTask } from "../types/task";
 import { Button } from "../components/common/Button";
 import { Card } from "../components/common/Card";
 import { CollapsibleSection } from "../components/common/CollapsibleSection";
+import { ReflectionPanel } from "../components/reflection/ReflectionPanel";
 import { TaskCard } from "../components/tasks/TaskCard";
 import { TaskEditorSheet, TaskEditorValue } from "../components/tasks/TaskEditorSheet";
 import { formatChineseDate, getMonthDays, getTodayString, isSameMonth, toDateString } from "../utils/date";
@@ -17,11 +18,14 @@ interface CalendarPageProps {
   tasks: StudyTask[];
   settings: AppSettings;
   reflections?: DailyReflection[];
+  initialDate?: string;
   onAddTask?: (task: NewCalendarTask) => StudyTask;
   onUpdateTask?: (task: StudyTask, patch: Partial<StudyTask>) => void;
   onDeleteTask?: (task: StudyTask) => void;
   onComplete?: (task: StudyTask) => void;
   onUndo?: (task: StudyTask) => void;
+  onSaveReflection?: (reflection: DailyReflection) => void;
+  notify?: (type: "success" | "error" | "info", message: string) => void;
 }
 
 const dotClass = {
@@ -31,12 +35,28 @@ const dotClass = {
   empty: "",
 };
 
-export function CalendarPage({ tasks, settings, reflections = [], onAddTask, onUpdateTask, onDeleteTask, onComplete, onUndo }: CalendarPageProps) {
+const moodIcons: Record<DailyMood, typeof Smile> = {
+  great: Laugh,
+  good: SmilePlus,
+  normal: Smile,
+  difficult: Meh,
+  adjust: Frown,
+};
+
+const moodClass: Record<DailyMood, string> = {
+  great: "text-emerald-500",
+  good: "text-sky-500",
+  normal: "text-amber-500",
+  difficult: "text-orange-500",
+  adjust: "text-rose-500",
+};
+
+export function CalendarPage({ tasks, settings, reflections = [], initialDate, onAddTask, onUpdateTask, onDeleteTask, onComplete, onUndo, onSaveReflection, notify }: CalendarPageProps) {
   const today = getTodayString();
   const taskAreaRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const [monthCursor, setMonthCursor] = useState(() => new Date());
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedDate, setSelectedDate] = useState(initialDate ?? today);
   const [addOpen, setAddOpen] = useState(false);
   const days = useMemo(() => getMonthDays(monthCursor.getFullYear(), monthCursor.getMonth()), [monthCursor]);
   const selectedSummary = summarizeDay(tasks, selectedDate);
@@ -47,6 +67,12 @@ export function CalendarPage({ tasks, settings, reflections = [], onAddTask, onU
     completed: selectedTasks.filter((task) => task.status === "completed"),
     other: selectedTasks.filter((task) => task.status === "postponed" || task.status === "cancelled"),
   }), [selectedTasks]);
+
+  useEffect(() => {
+    if (!initialDate) return;
+    setSelectedDate(initialDate);
+    setMonthCursor(new Date(initialDate));
+  }, [initialDate]);
 
   const changeMonth = (offset: number) => {
     setMonthCursor(new Date(monthCursor.getFullYear(), monthCursor.getMonth() + offset, 1));
@@ -106,7 +132,8 @@ export function CalendarPage({ tasks, settings, reflections = [], onAddTask, onU
             {days.map((day) => {
               const dateString = toDateString(day);
               const summary = summarizeDay(tasks, dateString);
-              const reflected = reflections.some((reflection) => reflection.date === dateString);
+              const reflection = reflections.find((item) => item.date === dateString);
+              const MoodIcon = reflection ? moodIcons[reflection.mood] : null;
               const active = selectedDate === dateString;
               const current = today === dateString;
               const muted = !isSameMonth(day, monthCursor.getFullYear(), monthCursor.getMonth());
@@ -129,7 +156,7 @@ export function CalendarPage({ tasks, settings, reflections = [], onAddTask, onU
                       className={`mt-0.5 h-1 w-1 rounded-full ${dotClass[summary.status]} ${active ? "ring-2 ring-white" : ""}`}
                     />
                   )}
-                  {reflected && <span className="mt-0.5 h-1 w-1 rounded-full bg-[var(--color-brand)]" aria-label="有记录" />}
+                  {reflection && MoodIcon && <MoodIcon className={`mt-0.5 ${moodClass[reflection.mood]}`} size={10} strokeWidth={2.5} aria-label="有小记" />}
                 </button>
               );
             })}
@@ -138,6 +165,7 @@ export function CalendarPage({ tasks, settings, reflections = [], onAddTask, onU
             <span className="inline-flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-emerald-500" />全部完成</span>
             <span className="inline-flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-orange-400" />部分完成</span>
             <span className="inline-flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-slate-400" />没有完成</span>
+            <span className="inline-flex items-center gap-2"><Smile size={13} />有小记</span>
           </div>
         </Card>
 
@@ -149,6 +177,7 @@ export function CalendarPage({ tasks, settings, reflections = [], onAddTask, onU
             </div>
             {onAddTask && <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand)] text-white" onClick={() => setAddOpen(true)} aria-label="添加任务"><Plus size={18} /></button>}
           </div>
+          {onSaveReflection && notify && <ReflectionPanel date={selectedDate} reflections={reflections} onSave={onSaveReflection} notify={notify} />}
           <div className="space-y-3">
             {selectedTasks.length === 0 ? (
               <div className="py-10 text-center text-[var(--color-text-secondary)]">
@@ -159,22 +188,22 @@ export function CalendarPage({ tasks, settings, reflections = [], onAddTask, onU
               <>
                 {grouped.overdue.length > 0 && (
                   <CollapsibleSection id="calendar-overdue" title="已逾期" count={grouped.overdue.length} defaultExpanded>
-                    <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">{grouped.overdue.map((task) => <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact onUpdate={onUpdateTask} onComplete={onComplete} onUndo={onUndo} onDelete={onDeleteTask} />)}</div>
+                    <div className="overflow-visible rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">{grouped.overdue.map((task) => <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact onUpdate={onUpdateTask} onComplete={onComplete} onUndo={onUndo} onDelete={onDeleteTask} />)}</div>
                   </CollapsibleSection>
                 )}
                 {grouped.pending.length > 0 && (
                   <CollapsibleSection id="calendar-pending" title="待完成" count={grouped.pending.length} defaultExpanded>
-                    <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">{grouped.pending.map((task) => <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact onUpdate={onUpdateTask} onComplete={onComplete} onUndo={onUndo} onDelete={onDeleteTask} />)}</div>
+                    <div className="overflow-visible rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">{grouped.pending.map((task) => <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact onUpdate={onUpdateTask} onComplete={onComplete} onUndo={onUndo} onDelete={onDeleteTask} />)}</div>
                   </CollapsibleSection>
                 )}
                 {grouped.completed.length > 0 && (
                   <CollapsibleSection id="calendar-completed" title="已完成" count={grouped.completed.length} defaultExpanded={false}>
-                    <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">{grouped.completed.map((task) => <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact onUpdate={onUpdateTask} onComplete={onComplete} onUndo={onUndo} onDelete={onDeleteTask} />)}</div>
+                    <div className="overflow-visible rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">{grouped.completed.map((task) => <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact onUpdate={onUpdateTask} onComplete={onComplete} onUndo={onUndo} onDelete={onDeleteTask} />)}</div>
                   </CollapsibleSection>
                 )}
                 {grouped.other.length > 0 && (
                   <CollapsibleSection id="calendar-other" title="已延期和已取消" count={grouped.other.length} defaultExpanded={false}>
-                    <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">{grouped.other.map((task) => <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact onUpdate={onUpdateTask} onComplete={onComplete} onUndo={onUndo} onDelete={onDeleteTask} />)}</div>
+                    <div className="overflow-visible rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">{grouped.other.map((task) => <TaskCard key={task.id} task={task} showEstimatedTime={settings.showEstimatedTime} compact onUpdate={onUpdateTask} onComplete={onComplete} onUndo={onUndo} onDelete={onDeleteTask} />)}</div>
                   </CollapsibleSection>
                 )}
               </>

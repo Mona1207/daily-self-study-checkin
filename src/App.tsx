@@ -40,6 +40,7 @@ export default function App() {
     replaceDatabase,
   } = store;
   const [page, setPage] = useState<PageKey>("today");
+  const [calendarDate, setCalendarDate] = useState(getTodayString());
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [evidenceTarget, setEvidenceTarget] = useState<StudyTask | null>(null);
   const [completeAfterEvidence, setCompleteAfterEvidence] = useState(false);
@@ -50,6 +51,9 @@ export default function App() {
       const mode = settings.themeMode ?? (settings.darkMode ? "dark" : "light");
       document.documentElement.classList.toggle("dark", mode === "dark" || (mode === "system" && systemDark));
       document.documentElement.dataset.themeColor = settings.themeColor ?? "blueviolet";
+      const pageColor = getComputedStyle(document.documentElement).getPropertyValue("--color-page").trim();
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", pageColor || "#f7f8fa");
+      document.body.style.backgroundColor = pageColor || "";
     };
     applyTheme();
     const media = window.matchMedia?.("(prefers-color-scheme: dark)");
@@ -157,6 +161,11 @@ export default function App() {
 
   const handleSaveSettings = (next: AppSettings) => replaceDatabase({ ...database, settings: next });
 
+  const goCalendarDate = (date: string) => {
+    setCalendarDate(date);
+    setPage("calendar");
+  };
+
   if (!settings.onboarded) {
     return (
       <div className="min-h-screen bg-[#F6F7F9] px-4 py-8 text-[#1F2329] dark:bg-slate-950 dark:text-slate-100">
@@ -206,7 +215,7 @@ export default function App() {
           onCancel={(task) => { updateTask(task.id, { status: "cancelled" }); notify("info", "已取消任务。"); }}
           onRestore={(task) => { updateTask(task.id, { status: task.date < getTodayString() ? "overdue" : "pending" }); notify("success", "任务已恢复。"); }}
           onSaveReflection={saveReflection}
-          onGoCalendar={() => setPage("calendar")}
+          onGoCalendar={() => goCalendarDate(getTodayString())}
           notify={notify}
         />
       )}
@@ -215,14 +224,17 @@ export default function App() {
           tasks={tasks}
           settings={settings}
           reflections={reflections}
+          initialDate={calendarDate}
           onAddTask={addTask}
           onUpdateTask={(task, patch) => { updateTask(task.id, patch); notify("success", "任务已更新。"); }}
           onDeleteTask={handleDelete}
           onComplete={handleComplete}
           onUndo={handleUndo}
+          onSaveReflection={saveReflection}
+          notify={notify}
         />
       )}
-      {page === "statistics" && <StatisticsPage tasks={tasks} reflections={reflections} onGoDate={() => setPage("calendar")} />}
+      {page === "statistics" && <StatisticsPage tasks={tasks} reflections={reflections} onGoDate={goCalendarDate} />}
       {page === "profile" && (
         <SettingsPage
           database={database}

@@ -52,7 +52,23 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
   const onTimeRate = completed ? Math.round((onTimeCompleted / completed) * 100) : 0;
   const streak = calculateStreak(tasks);
   const daily = days.map((date) => summarizeDay(tasks, date));
-  const maxCompleted = Math.max(1, ...daily.map((item) => item.completed));
+  const trendValues = daily.map((item) => ({
+    date: item.date,
+    total: item.total,
+    completed: item.completed,
+    value: trendMode === "count" ? item.completed : getCompletionPercent(item),
+  }));
+  const trendMax = trendMode === "count" ? Math.max(1, ...trendValues.map((item) => item.value)) : 100;
+  const chartWidth = 320;
+  const chartHeight = 160;
+  const chartPadX = 18;
+  const chartPadY = 18;
+  const chartPoints = trendValues.map((item, index) => {
+    const x = chartPadX + (index / Math.max(1, trendValues.length - 1)) * (chartWidth - chartPadX * 2);
+    const y = chartHeight - chartPadY - (item.value / trendMax) * (chartHeight - chartPadY * 2);
+    return { ...item, x, y };
+  });
+  const chartPath = chartPoints.map((point) => `${point.x},${point.y}`).join(" ");
   const bySubject = SUBJECTS.map((subject) => ({
     subject,
     total: rangeTasks.filter((task) => task.subject === subject).length,
@@ -127,12 +143,40 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
           <p className="text-sm text-[var(--color-text-secondary)]">完成任务后，这里会生成你的执行趋势。</p>
         ) : (
           <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
-            {daily.map((item) => (
-              <div key={item.date} className="py-1.5">
-                <div className="mb-1 flex justify-between text-xs text-[var(--color-text-secondary)]"><span>{item.date.slice(5)}</span><span>{item.completed}/{item.total}</span></div>
-                <ProgressBar percent={trendMode === "count" ? Math.round((item.completed / maxCompleted) * 100) : getCompletionPercent(item)} label="" />
-              </div>
-            ))}
+            <svg className="h-48 w-full overflow-visible" viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-label={`${rangeLabel[range]}完成趋势折线图`}>
+              {[0, 0.5, 1].map((ratio) => (
+                <g key={ratio}>
+                  <line
+                    x1={chartPadX}
+                    x2={chartWidth - chartPadX}
+                    y1={chartPadY + ratio * (chartHeight - chartPadY * 2)}
+                    y2={chartPadY + ratio * (chartHeight - chartPadY * 2)}
+                    stroke="currentColor"
+                    className="text-[var(--color-border)]"
+                    strokeWidth="1"
+                  />
+                </g>
+              ))}
+              <polyline points={chartPath} fill="none" stroke="var(--color-brand)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              {chartPoints.map((point) => (
+                <g key={point.date}>
+                  <circle cx={point.x} cy={point.y} r="4" fill="var(--color-surface)" stroke="var(--color-brand)" strokeWidth="2.5" />
+                  {trendValues.length <= 14 && (
+                    <text x={point.x} y={chartHeight - 2} textAnchor="middle" className="fill-[var(--color-text-secondary)] text-[10px]">
+                      {point.date.slice(5)}
+                    </text>
+                  )}
+                </g>
+              ))}
+            </svg>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-[var(--color-text-secondary)] sm:grid-cols-4">
+              {chartPoints.slice(-4).map((point) => (
+                <button key={point.date} className="rounded-[8px] bg-[var(--color-surface-muted)] px-2 py-2 text-left" onClick={() => onGoDate?.(point.date)}>
+                  <span className="block font-semibold text-[var(--color-text)]">{point.date.slice(5)}</span>
+                  <span>{trendMode === "count" ? `${point.completed} 项完成` : `${point.value}% 完成率`}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </CollapsibleSection>

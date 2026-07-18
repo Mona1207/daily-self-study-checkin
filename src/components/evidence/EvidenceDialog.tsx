@@ -16,7 +16,7 @@ interface EvidenceDialogProps {
 }
 
 const inputClass =
-  "min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-indigo-500/20";
+  "min-h-11 w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-sm outline-none transition focus:border-[var(--color-brand)] focus:bg-[var(--color-surface)]";
 
 export function EvidenceDialog({ task, evidence, open, onClose, onSave, notify }: EvidenceDialogProps) {
   const [text, setText] = useState("");
@@ -109,7 +109,7 @@ export function EvidenceDialog({ task, evidence, open, onClose, onSave, notify }
     <Modal title={task ? `添加完成记录：${task.title}` : "完成记录"} open={open} onClose={onClose}>
       {task && (
         <form className="space-y-5" onSubmit={submit}>
-          <div className="rounded-2xl bg-indigo-50 p-4 text-sm text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">
+          <div className="rounded-[10px] bg-[var(--color-brand-soft)] p-4 text-sm text-[var(--color-brand)]">
             记录要求：{EVIDENCE_LABEL[task.evidenceRequirement]}
           </div>
           {(task.evidenceRequirement === "text" || task.evidenceRequirement === "text_and_image") && (
@@ -126,14 +126,14 @@ export function EvidenceDialog({ task, evidence, open, onClose, onSave, notify }
           )}
           {(task.evidenceRequirement === "image" || task.evidenceRequirement === "text_and_image") && (
             <div>
-              <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-200 dark:ring-slate-700">
+              <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-brand)]">
                 <ImagePlus size={18} />
                 上传图片
                 <input className="hidden" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleImages} />
               </label>
               <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
                 {images.map((image) => (
-                  <div key={image.id} className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
+                  <div key={image.id} className="relative h-28 w-28 shrink-0 overflow-hidden rounded-[10px] border border-[var(--color-border)]">
                     <a href={image.url} target="_blank" rel="noreferrer">
                       <img src={image.url} alt="完成记录" className="h-full w-full object-cover" />
                     </a>

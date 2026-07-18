@@ -55,7 +55,7 @@ interface SettingsPageProps {
 type Panel = "task" | "reminders" | "appearance" | "data" | "about";
 
 const inputClass =
-  "min-h-11 w-full rounded-[10px] border border-[#E9EBEF] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#4F6EF7] focus:ring-4 focus:ring-[#4F6EF7]/10 dark:border-slate-700 dark:bg-slate-950";
+  "min-h-11 w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-brand)] focus:bg-[var(--color-surface)]";
 
 const makeCategory = (name: string, color: string, order: number): TaskCategory => ({
   id: `category-${crypto.randomUUID()}`,
