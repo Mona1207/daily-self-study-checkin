@@ -14,7 +14,8 @@
   --color-warning-soft: #fff3df;
   --color-danger: #ff4d4f;
   --color-page: #f7fffc;
-  --color-surface: rgb(255 255 255 / 0.86);
+  --color-nav: #ffffff;
+  --color-surface: #ffffff;
   --color-surface-muted: #f5f5fb;
   --color-text: #101540;
   --color-text-secondary: #6f7590;
@@ -45,7 +46,8 @@
 .dark {
   color-scheme: dark;
   --color-page: #11101a;
-  --color-surface: rgb(28 27 42 / 0.86);
+  --color-nav: #151421;
+  --color-surface: #1c1b2a;
   --color-surface-muted: #252436;
   --color-text: #f8f7ff;
   --color-text-secondary: #b8b6c9;
@@ -61,18 +63,6 @@
     linear-gradient(180deg, #151421 0%, #11101a 60%, #10131a 100%);
 }
 
-[data-theme-color="blueviolet"] {
-  --color-brand: #7657f6;
-  --color-brand-2: #5f86f7;
-  --color-brand-rgb: 118 87 246;
-  --color-brand-soft: #f0edff;
-  --color-border: rgb(118 87 246 / 0.12);
-  --color-page: #fbf9ff;
-  --page-bg:
-    radial-gradient(circle at 14% 0%, rgb(var(--color-brand-rgb) / 0.1), transparent 28%),
-    linear-gradient(180deg, #fffdfb 0%, var(--color-page) 48%, #f8fbff 100%);
-}
-
 [data-theme-color="sky"] {
   --color-brand: #2698ea;
   --color-brand-2: #6fb7f4;
@@ -80,6 +70,7 @@
   --color-brand-soft: #e9f5ff;
   --color-border: rgb(38 152 234 / 0.14);
   --color-page: #f7fbff;
+  --color-nav: #ffffff;
   --page-bg:
     radial-gradient(circle at 14% 0%, rgb(var(--color-brand-rgb) / 0.1), transparent 28%),
     linear-gradient(180deg, #fbfdff 0%, var(--color-page) 52%, #f4fbff 100%);
@@ -92,6 +83,7 @@
   --color-brand-soft: #e9fbf8;
   --color-border: rgb(24 169 153 / 0.14);
   --color-page: #f7fffc;
+  --color-nav: #ffffff;
   --page-bg:
     radial-gradient(circle at 14% 0%, rgb(var(--color-brand-rgb) / 0.1), transparent 28%),
     linear-gradient(180deg, #fffefd 0%, var(--color-page) 52%, #f3fbf8 100%);
@@ -104,6 +96,7 @@
   --color-brand-soft: #fff2e5;
   --color-border: rgb(242 138 46 / 0.16);
   --color-page: #fffaf3;
+  --color-nav: #ffffff;
   --page-bg:
     radial-gradient(circle at 14% 0%, rgb(var(--color-brand-rgb) / 0.1), transparent 28%),
     linear-gradient(180deg, #fffefd 0%, var(--color-page) 52%, #fff7e9 100%);
@@ -116,6 +109,7 @@
   --color-brand-soft: #fff0f4;
   --color-border: rgb(224 79 117 / 0.15);
   --color-page: #fff8fa;
+  --color-nav: #ffffff;
   --page-bg:
     radial-gradient(circle at 14% 0%, rgb(var(--color-brand-rgb) / 0.1), transparent 28%),
     linear-gradient(180deg, #fffdfd 0%, var(--color-page) 52%, #fff5f1 100%);
@@ -165,7 +159,29 @@ button {
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(18px);
+}
+
+.app-tabbar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 60;
+  min-height: calc(var(--nav-height) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow: hidden;
+  isolation: isolate;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-nav);
+  box-shadow: none;
+  transform: translateZ(0);
+}
+
+.app-tabbar::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background: var(--color-nav);
 }
 
 .morning-illustration {

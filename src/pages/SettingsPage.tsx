@@ -7,7 +7,6 @@ import {
   Download,
   FileArchive,
   FileJson,
-  HelpCircle,
   Info,
   MessageCircle,
   NotebookPen,
@@ -56,7 +55,7 @@ interface SettingsPageProps {
   notify: (type: "success" | "error" | "info", message: string) => void;
 }
 
-type Panel = "account" | "reminders" | "appearance" | "data" | "tags" | "reflections" | "recurring" | "help" | "about";
+type Panel = "reminders" | "appearance" | "data" | "tags" | "reflections" | "recurring" | "about";
 
 const inputClass =
   "min-h-11 w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-brand)] focus:bg-[var(--color-surface)]";
@@ -234,9 +233,6 @@ export function SettingsPage({
           </div>
         </div>
 
-        {renderMenuGroup("账户", [
-          { key: "account", icon: <ShieldCheck size={23} />, title: "账号与安全", detail: "本地账号、保护设置", tone: "text-[var(--color-brand)]" },
-        ])}
         {renderMenuGroup("偏好", [
           { key: "appearance", icon: <Palette size={23} />, title: "主题外观", detail: `${themeOptions.find((item) => item.value === settings.themeColor)?.label ?? "青绿"} · ${settings.themeMode === "dark" ? "深色" : settings.themeMode === "system" ? "跟随系统" : "浅色"}`, tone: "text-emerald-500" },
           { key: "reminders", icon: <Bell size={23} />, title: "提醒设置", detail: describeNotificationPermission(settings.reminderPreferences?.permissionStatus ?? getNotificationPermission()), tone: "text-orange-500" },
@@ -248,8 +244,7 @@ export function SettingsPage({
         ])}
         {renderMenuGroup("数据与支持", [
           { key: "data", icon: <Download size={23} />, title: "数据导出", detail: "备份、恢复、导入", tone: "text-sky-500" },
-          { key: "help", icon: <HelpCircle size={23} />, title: "帮助与反馈", detail: "使用建议与反馈入口", tone: "text-blue-500" },
-          { key: "about", icon: <Info size={23} />, title: "关于我们", detail: `版本 ${APP_VERSION}`, tone: "text-slate-400" },
+          { key: "about", icon: <Info size={23} />, title: "关于", detail: "账号、安全、反馈、版本", tone: "text-slate-400" },
         ])}
 
         <section className="soft-card rounded-[16px] p-4">
@@ -397,37 +392,6 @@ export function SettingsPage({
     </div>
   );
 
-  const renderAccountPanel = () => (
-    <div className="space-y-5">
-      {renderHeader("账号与安全")}
-      <section className="soft-card rounded-[16px] p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[var(--color-brand-soft)] text-[var(--color-brand)]">
-            <UserRound size={24} />
-          </div>
-          <div>
-            <h2 className="text-[16px] font-black">本地账号</h2>
-            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">数据保存在当前设备</p>
-          </div>
-        </div>
-        <label className="mt-4 block text-sm font-semibold">
-          昵称
-          <input className={`${inputClass} mt-2`} value={profileName} onChange={(event) => setProfileName(event.target.value)} placeholder="输入昵称" />
-        </label>
-        <Button className="mt-3" variant="secondary" icon={<Save size={18} />} onClick={() => updateSetting({ userName: profileName.trim() || "我", studentName: profileName.trim() || "我" })}>保存昵称</Button>
-      </section>
-      <section className="soft-card rounded-[16px] p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-[16px] font-black">敏感操作保护</h2>
-            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">导入、清空等操作前再次确认</p>
-          </div>
-          <input type="checkbox" checked={settings.requireAdminPasswordEverySession} onChange={(event) => updateSetting({ requireAdminPasswordEverySession: event.target.checked })} />
-        </div>
-      </section>
-    </div>
-  );
-
   const renderAppearancePanel = () => (
     <div className="space-y-5">
       {renderHeader("外观设置")}
@@ -555,17 +519,49 @@ export function SettingsPage({
     );
   };
 
-  const renderHelpPanel = () => (
+  const renderAboutPanel = () => (
     <div className="space-y-5">
-      {renderHeader("帮助与反馈")}
+      {renderHeader("关于")}
+      <section className="soft-card rounded-[16px] p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[var(--color-brand-soft)] text-[var(--color-brand)]">
+            <UserRound size={24} />
+          </div>
+          <div>
+            <h2 className="text-[16px] font-black">本地账号</h2>
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">任务、小记和设置保存在当前设备</p>
+          </div>
+        </div>
+        <label className="mt-4 block text-sm font-semibold">
+          昵称
+          <input className={`${inputClass} mt-2`} value={profileName} onChange={(event) => setProfileName(event.target.value)} placeholder="输入昵称" />
+        </label>
+        <Button className="mt-3" variant="secondary" icon={<Save size={18} />} onClick={() => updateSetting({ userName: profileName.trim() || "我", studentName: profileName.trim() || "我" })}>保存昵称</Button>
+      </section>
+
+      <section className="soft-card rounded-[16px] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[var(--color-brand-soft)] text-[var(--color-brand)]">
+              <ShieldCheck size={23} />
+            </div>
+            <div>
+              <h2 className="text-[16px] font-black">安全保护</h2>
+              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">导入、清空等操作前再次确认</p>
+            </div>
+          </div>
+          <input type="checkbox" checked={settings.requireAdminPasswordEverySession} onChange={(event) => updateSetting({ requireAdminPasswordEverySession: event.target.checked })} />
+        </div>
+      </section>
+
       <section className="soft-card rounded-[16px] p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[var(--color-brand-soft)] text-[var(--color-brand)]">
             <MessageCircle size={23} />
           </div>
           <div>
-            <h2 className="text-[16px] font-black">反馈</h2>
-            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">当前版本 {APP_VERSION}</p>
+            <h2 className="text-[16px] font-black">帮助与反馈</h2>
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">截图和操作步骤最容易定位问题</p>
           </div>
         </div>
         <div className="mt-4 grid gap-2">
@@ -573,33 +569,23 @@ export function SettingsPage({
           <Button variant="secondary" onClick={() => setPanel("data")}>备份与恢复数据</Button>
         </div>
       </section>
-      <section className="soft-card rounded-[16px] p-4 text-sm leading-6 text-[var(--color-text-secondary)]">
-        所有任务和小记默认保存在本机。更换设备前，请先在“数据导出”里导出完整备份。
-      </section>
-    </div>
-  );
 
-  const renderAboutPanel = () => (
-    <div className="space-y-5">
-      {renderHeader("关于")}
       <Card>
         <h2 className="text-base font-semibold">今日清单</h2>
-        <p className="mt-2 text-sm text-[#6B7280]">把每天要做的事，清楚地安排好。</p>
-        <p className="mt-4 text-sm text-[#6B7280]">当前版本：{APP_VERSION} ({APP_VERSION_CODE})</p>
-        <p className="mt-4 text-sm leading-6 text-[#6B7280]">应用不需要注册登录，不使用后端，不包含社交功能。任务、每日回顾和完成记录默认只保存在当前设备。</p>
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">把每天要做的事，清楚地安排好。</p>
+        <p className="mt-4 text-sm text-[var(--color-text-secondary)]">当前版本：{APP_VERSION} ({APP_VERSION_CODE})</p>
+        <p className="mt-4 text-sm leading-6 text-[var(--color-text-secondary)]">应用不需要注册登录，不使用后端，不包含社交功能。任务、每日回顾和完成记录默认只保存在当前设备。</p>
       </Card>
       <AppUpdateCard notify={notify} />
     </div>
   );
 
   if (!panel) return renderMain();
-  if (panel === "account") return renderAccountPanel();
   if (panel === "reminders") return renderRemindersPanel();
   if (panel === "appearance") return renderAppearancePanel();
   if (panel === "tags") return renderTagsPanel();
   if (panel === "reflections") return renderReflectionsPanel();
   if (panel === "recurring") return renderRecurringPanel();
   if (panel === "data") return renderDataPanel();
-  if (panel === "help") return renderHelpPanel();
   return renderAboutPanel();
 }
