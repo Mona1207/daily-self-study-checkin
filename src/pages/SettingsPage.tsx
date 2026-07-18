@@ -3,17 +3,21 @@ import {
   ArrowLeft,
   Bell,
   ChevronRight,
+  CircleUserRound,
   Database,
   Download,
   FileArchive,
   FileJson,
-  Layers3,
+  HelpCircle,
+  Info,
   Moon,
+  NotebookPen,
+  Palette,
   Plus,
   RefreshCw,
   Save,
-  Settings,
-  Sun,
+  ShieldCheck,
+  Tags,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -185,62 +189,79 @@ export function SettingsPage({
     notify("success", "数据已清空。");
   };
 
-  const renderMain = () => (
-    <div className="space-y-5">
-      <div>
-        <h1 className="mt-1 text-[28px] font-bold">我的</h1>
-      </div>
-      <section className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-        <div className="grid grid-cols-2 gap-6">
-          <div><div className="text-[28px] font-semibold leading-9">{tasks.filter((task) => task.status === "completed").length}</div><div className="text-[13px] text-[var(--color-text-secondary)]">累计完成</div></div>
-          <div><div className="text-[28px] font-semibold leading-9">{new Set(tasks.map((task) => task.date)).size}</div><div className="text-[13px] text-[var(--color-text-secondary)]">连续使用</div></div>
+  const renderMain = () => {
+    const completedCount = tasks.filter((task) => task.status === "completed").length;
+    const activeDays = new Set(tasks.map((task) => task.date)).size;
+    const menuItems: Array<{ key: Panel; icon: JSX.Element; title: string; tone: string }> = [
+      { key: "about", icon: <ShieldCheck size={23} />, title: "账号与安全", tone: "text-[var(--color-brand)]" },
+      { key: "reminders", icon: <Bell size={23} />, title: "提醒设置", tone: "text-orange-500" },
+      { key: "appearance", icon: <Palette size={23} />, title: "主题外观", tone: "text-emerald-500" },
+      { key: "data", icon: <Download size={23} />, title: "数据导出", tone: "text-sky-500" },
+      { key: "task", icon: <Tags size={23} />, title: "标签管理", tone: "text-violet-500" },
+      { key: "task", icon: <NotebookPen size={23} />, title: "每日小记管理", tone: "text-amber-500" },
+      { key: "about", icon: <HelpCircle size={23} />, title: "帮助与反馈", tone: "text-blue-500" },
+      { key: "about", icon: <Info size={23} />, title: "关于我们", tone: "text-slate-400" },
+    ];
+
+    return (
+      <div className="space-y-5 pb-24">
+        <div className="morning-illustration -mx-[var(--page-x)] -mt-5 px-[var(--page-x)] pb-8 pt-12">
+          <div className="relative z-10">
+            <h1 className="text-[38px] font-black leading-tight">我的</h1>
+          </div>
         </div>
-      </section>
-      {[
-        {
-          title: "任务设置",
-          items: [
-            { key: "task" as const, icon: <Layers3 size={19} />, title: "分类管理", desc: "分类、周期任务、默认设置" },
-          ],
-        },
-        {
-          title: "偏好",
-          items: [
-            { key: "reminders" as const, icon: <Bell size={19} />, title: "提醒", desc: "通知权限和默认提醒" },
-            { key: "appearance" as const, icon: settings.darkMode ? <Moon size={19} /> : <Sun size={19} />, title: "外观", desc: "主题、动画与触感" },
-          ],
-        },
-        {
-          title: "数据",
-          items: [
-            { key: "data" as const, icon: <Database size={19} />, title: "导入与导出", desc: "备份、恢复、本地数据" },
-          ],
-        },
-        {
-          title: "关于",
-          items: [
-            { key: "about" as const, icon: <Settings size={19} />, title: "关于 App", desc: "帮助、隐私、版本号" },
-          ],
-        },
-      ].map((group) => (
-        <section key={group.title}>
-          <h2 className="mb-2 px-1 text-[13px] font-medium text-[var(--color-text-secondary)]">{group.title}</h2>
-          <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">
-            {group.items.map((item) => (
-              <button key={item.key} className="flex min-h-14 w-full items-center gap-3 border-b border-[var(--color-border)] px-3 text-left last:border-b-0" onClick={() => setPanel(item.key)}>
-                <span className="flex h-8 w-8 items-center justify-center text-[var(--color-text-secondary)]">{item.icon}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-medium text-[var(--color-text)]">{item.title}</span>
-                  <span className="mt-0.5 block truncate text-[13px] text-[var(--color-text-secondary)]">{item.desc}</span>
-                </span>
-                <ChevronRight className="text-[var(--color-text-muted)]" size={18} />
-              </button>
+
+        <section className="soft-card -mt-10 flex min-h-[112px] items-center gap-4 rounded-[22px] p-4">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#efeaff] to-[#d9d0ff] text-[var(--color-brand)]">
+            <CircleUserRound size={52} strokeWidth={1.5} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h2 className="truncate text-[24px] font-black">{settings.userName || settings.studentName || "小清清"}</h2>
+              <span className="rounded-[8px] bg-[var(--color-brand-soft)] px-2 py-1 text-xs font-black text-[var(--color-brand)]">LV.6</span>
+            </div>
+            <p className="mt-2 truncate text-[15px] text-[var(--color-text-secondary)]">专注当下，成就更好的自己 ✨</p>
+          </div>
+          <ChevronRight className="text-[var(--color-text-muted)]" size={24} />
+        </section>
+
+        <section className="soft-card rounded-[22px] bg-[var(--color-brand-soft)]/70 p-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-soft)] text-[var(--color-brand)]"><Moon size={34} fill="currentColor" /></div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm text-[var(--color-text-secondary)]">已坚持</div>
+              <div className="mt-1 text-[34px] font-black leading-none text-[var(--color-brand)]">{activeDays}<span className="ml-1 text-base text-[var(--color-text)]">天</span></div>
+            </div>
+            <div className="shrink-0 text-right text-sm text-[var(--color-text-secondary)]">累计完成 {completedCount}</div>
+          </div>
+          <div className="mt-4 flex justify-between gap-2">
+            {["一", "二", "三", "四", "五", "六", "今"].map((day, index) => (
+              <span key={day} className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold ${index === 6 ? "bg-[var(--color-brand)] text-white shadow-[0_8px_18px_rgb(104_71_242_/_0.26)]" : "bg-white/75 text-[var(--color-brand)] dark:bg-white/10"}`}>
+                {index < 6 ? "✓" : day}
+              </span>
             ))}
           </div>
         </section>
-      ))}
-    </div>
-  );
+
+        <section className="soft-card overflow-hidden rounded-[20px] px-4">
+          {menuItems.map((item) => (
+            <button key={`${item.title}-${item.key}`} className="flex min-h-[62px] w-full items-center gap-4 border-b border-[var(--color-border)] text-left last:border-b-0" onClick={() => setPanel(item.key)}>
+              <span className={`flex h-10 w-10 items-center justify-center ${item.tone}`}>{item.icon}</span>
+              <span className="min-w-0 flex-1 text-[18px] font-bold text-[var(--color-text)]">{item.title}</span>
+              <ChevronRight className="text-[var(--color-text-muted)]" size={21} />
+            </button>
+          ))}
+        </section>
+
+        <section className="soft-card morning-illustration rounded-[18px] p-4">
+          <div className="relative z-10 pl-16">
+            <h2 className="text-[17px] font-black">感谢你与今日清单一起成长 🌱</h2>
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">愿你每天都比昨天更进步一点点</p>
+          </div>
+        </section>
+      </div>
+    );
+  };
 
   const renderHeader = (title: string) => (
     <div className="flex items-center gap-3">

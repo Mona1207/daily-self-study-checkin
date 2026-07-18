@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
-import { CalendarDays, Plus, SlidersHorizontal } from "lucide-react";
+import { CalendarDays, CheckCircle2, ClipboardList, Clock3, Plus, SlidersHorizontal, Sparkles } from "lucide-react";
 import { AppSettings, DailyReflection, StudyTask, TaskEvidence } from "../types/task";
 import { CollapsibleSection } from "../components/common/CollapsibleSection";
 import { ProgressBar } from "../components/common/ProgressBar";
@@ -72,7 +72,7 @@ const SectionTasks = ({
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? list : list.slice(0, limit);
   return (
-    <div className="overflow-visible rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)]">
+    <div className="space-y-3 overflow-visible">
       {visible.map((task) => (
         <TaskCard
           key={task.id}
@@ -95,7 +95,7 @@ const SectionTasks = ({
         />
       ))}
       {list.length > limit && (
-        <button className="min-h-11 w-full text-sm font-medium text-[var(--color-brand)]" onClick={() => setShowAll((value) => !value)}>
+        <button className="min-h-11 w-full rounded-[14px] bg-white/60 text-sm font-semibold text-[var(--color-brand)] shadow-[var(--shadow-soft)] dark:bg-white/10" onClick={() => setShowAll((value) => !value)}>
           {showAll ? `收起到前${limit}项` : `显示剩余${list.length - limit}项`}
         </button>
       )}
@@ -194,38 +194,56 @@ export function TodayPage({
   };
 
   return (
-    <div className="space-y-4 pb-24">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <button className="text-left" onClick={onGoCalendar}>
-            <div className="text-[28px] font-bold leading-tight">{todayDate.getMonth() + 1}月{todayDate.getDate()}日 <span className="text-base font-medium text-[var(--color-text-secondary)]">{getWeekdayName(todayDate)}</span></div>
+    <div className="space-y-5 pb-24">
+      <header className="morning-illustration -mx-[var(--page-x)] -mt-5 px-[var(--page-x)] pb-5 pt-5">
+        <div className="relative z-10 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[36px] font-black leading-tight tracking-normal">今日清单 <span className="text-xl text-amber-400">✦</span></h1>
+            <button className="mt-3 text-left" onClick={onGoCalendar}>
+              <div className="text-[23px] font-black leading-tight">{todayDate.getFullYear()}年{todayDate.getMonth() + 1}月{todayDate.getDate()}日 <span className="text-[21px]">{getWeekdayName(todayDate)}</span></div>
+            </button>
+            <p className="mt-4 text-[15px] leading-6 text-[var(--color-text-secondary)]">{getGreeting()}，专注当下，成就更好的自己 <span className="text-amber-400">✦</span></p>
+          </div>
+          <button className="mt-11 flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#8c73ff] to-[#6847f2] text-white shadow-[0_16px_32px_rgb(104_71_242_/_0.28)]" onClick={() => setQuickOpen(true)} aria-label="添加任务">
+            <Plus size={29} />
           </button>
-          <p className="mt-1 text-[13px] leading-[18px] text-[var(--color-text-secondary)]">{getGreeting()} · 今天 {summary.total} 项 · 已完成 {summary.completed} 项</p>
         </div>
-        <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand)] text-white shadow-[var(--shadow-float)]" onClick={() => setQuickOpen(true)} aria-label="添加任务">
-          <Plus size={21} />
-        </button>
       </header>
 
-      <section className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+      <section className="soft-card -mt-6 grid grid-cols-3 rounded-[22px] px-3 py-4">
+        <div className="flex items-center justify-center gap-2">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-soft)] text-[var(--color-brand)]"><ClipboardList size={21} /></span>
+          <span><strong className="block text-[23px] leading-7">{summary.total}</strong><span className="whitespace-nowrap text-[11px] text-[var(--color-text-secondary)]">今日任务</span></span>
+        </div>
+        <div className="flex items-center justify-center gap-2 border-x border-[var(--color-border)] px-2">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-success-soft)] text-[var(--color-success)]"><CheckCircle2 size={22} /></span>
+          <span><strong className="block text-[23px] leading-7">{summary.completed}</strong><span className="whitespace-nowrap text-[11px] text-[var(--color-text-secondary)]">已完成</span></span>
+        </div>
+        <div className="flex items-center justify-center gap-2 pl-2">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-warning-soft)] text-[var(--color-warning)]"><Clock3 size={22} /></span>
+          <span><strong className="block text-[23px] leading-7">{Math.max(0, summary.total - summary.completed)}</strong><span className="whitespace-nowrap text-[11px] text-[var(--color-text-secondary)]">未完成</span></span>
+        </div>
+      </section>
+
+      <section className="soft-card rounded-[18px] px-4 py-3">
         {summary.total === 0 ? (
           <p className="text-[15px] leading-[22px] text-[var(--color-text-secondary)]">今天还没有安排任务</p>
         ) : (
           <>
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-[13px] font-medium leading-[18px] text-[var(--color-text-secondary)]">今日进度</div>
-                <div className="mt-0.5 text-[17px] font-semibold">{summary.completed} / {summary.total}</div>
+                <div className="text-[13px] font-semibold leading-[18px] text-[var(--color-text-secondary)]">今日进度</div>
+                <div className="mt-0.5 text-[17px] font-bold">{summary.completed} / {summary.total}</div>
               </div>
-              <div className="text-[28px] font-semibold leading-none text-[var(--color-text)]">{percent}%</div>
+              <div className="text-[28px] font-black leading-none text-[var(--color-brand)]">{percent}%</div>
             </div>
             <div className="mt-3"><ProgressBar percent={percent} label="" /></div>
           </>
         )}
       </section>
 
-      <form className="flex h-12 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3" onSubmit={submitInlineQuick}>
-        <Plus size={18} className="shrink-0 text-[var(--color-brand)]" />
+      <form className="soft-card flex min-h-[52px] items-center gap-2 rounded-[18px] px-3 py-2" onSubmit={submitInlineQuick}>
+        <Sparkles size={18} className="shrink-0 text-[var(--color-brand)]" />
         <input
           className="min-w-0 flex-1 bg-transparent text-[15px] leading-[22px] outline-none placeholder:text-[var(--color-text-muted)]"
           value={quickTitle}
@@ -233,10 +251,15 @@ export function TodayPage({
           placeholder="添加今天要做的事..."
           aria-label="快速添加今天任务"
         />
-        <button type="button" className="flex h-9 w-9 items-center justify-center rounded-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]" onClick={() => setQuickOpen(true)} aria-label="更多设置">
+        <button type="button" className="flex h-9 w-9 items-center justify-center rounded-[12px] text-[var(--color-text-secondary)] hover:bg-white/70 dark:hover:bg-white/10" onClick={() => setQuickOpen(true)} aria-label="更多设置">
           <SlidersHorizontal size={18} />
         </button>
       </form>
+
+      <div className="flex items-center justify-between">
+        <h2 className="text-[20px] font-black">今天的任务</h2>
+        <button className="text-sm font-semibold text-[var(--color-text-secondary)]" onClick={onGoCalendar}>按时间⌄</button>
+      </div>
 
       {summary.total === 0 ? (
         <div className="flex min-h-[220px] flex-col items-center justify-center text-center">

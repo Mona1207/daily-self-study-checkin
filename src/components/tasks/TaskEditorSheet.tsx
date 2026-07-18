@@ -129,8 +129,8 @@ function FieldRow({
 function SectionBlock({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
-      <h3 className="mb-2 px-1 text-[13px] font-medium text-[var(--color-text-secondary)]">{title}</h3>
-      <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">{children}</div>
+      <h3 className="mb-2 px-1 text-[13px] font-bold text-[var(--color-text-secondary)]">{title}</h3>
+      <div className="soft-card rounded-[18px] p-3">{children}</div>
     </section>
   );
 }
@@ -288,30 +288,31 @@ export function TaskEditorSheet({ open, mode = "create", task, initialDate, onCl
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35" role="dialog" aria-modal="true" onMouseDown={requestClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 backdrop-blur-sm" role="dialog" aria-modal="true" onMouseDown={requestClose}>
       <form
-        className="flex max-h-[92dvh] w-full max-w-2xl flex-col rounded-t-[20px] bg-[var(--color-page)] shadow-[var(--shadow-float)]"
+        className="flex max-h-[100dvh] min-h-[100dvh] w-full max-w-[430px] flex-col bg-[var(--color-page)] shadow-[var(--shadow-float)] sm:max-h-[92dvh] sm:min-h-0 sm:rounded-[28px]"
         onSubmit={submit}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-[var(--color-border)]" />
-        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border)] px-4">
-          <button type="button" className="flex h-10 w-10 items-center justify-center rounded-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]" onClick={requestClose} aria-label="关闭">
+        <header className="morning-illustration shrink-0 px-4 pb-5 pt-[max(18px,env(safe-area-inset-top))]">
+          <div className="relative z-10 flex h-14 items-center justify-between gap-3">
+          <button type="button" className="flex h-11 w-11 items-center justify-center rounded-[14px] text-[var(--color-text)] hover:bg-white/60 dark:hover:bg-white/10" onClick={requestClose} aria-label="关闭">
             <X size={20} />
           </button>
-          <h2 className="text-[17px] font-semibold text-[var(--color-text)]">{title}</h2>
+          <h2 className="text-[23px] font-black text-[var(--color-text)]">{title}</h2>
           <button
             type="submit"
-            className="min-h-10 rounded-[10px] px-3 text-[15px] font-medium text-[var(--color-brand)] disabled:text-[var(--color-text-muted)]"
+            className="min-h-10 rounded-[12px] px-3 text-[15px] font-bold text-[var(--color-brand)] disabled:text-[var(--color-text-muted)]"
             disabled={!draft.title.trim() || saving}
           >
             {saving ? "保存中" : "保存"}
           </button>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
           <div className="space-y-5">
-            <section className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">
+            <section className="soft-card rounded-[18px] px-3 py-3">
               <input
                 autoFocus
                 className="min-h-14 w-full bg-transparent text-[20px] font-semibold leading-7 text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)]"
@@ -500,6 +501,15 @@ export function TaskEditorSheet({ open, mode = "create", task, initialDate, onCl
               )}
             </section>
           </div>
+        </div>
+        <div className="shrink-0 px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-2">
+          <button
+            type="submit"
+            className="flex min-h-[56px] w-full items-center justify-center rounded-[18px] bg-gradient-to-r from-[#8c73ff] to-[#6847f2] text-[18px] font-black text-white shadow-[0_16px_32px_rgb(104_71_242_/_0.28)] disabled:opacity-50"
+            disabled={!draft.title.trim() || saving}
+          >
+            {saving ? "保存中" : "保存任务"}
+          </button>
         </div>
       </form>
     </div>

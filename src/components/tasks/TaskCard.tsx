@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Check, Edit3, GripVertical, MoreHorizontal, Repeat2, Trash2 } from "lucide-react";
+import { Bell, Check, Clock3, Edit3, Flag, GripVertical, MoreHorizontal, Repeat2, Trash2 } from "lucide-react";
 import { EVIDENCE_LABEL, STATUS_LABEL, StudyTask, TaskEvidence } from "../../types/task";
 import { formatTime } from "../../utils/date";
 import { Button } from "../common/Button";
@@ -32,6 +32,13 @@ const priorityText = {
   low: "低",
   medium: "中",
   high: "高",
+};
+
+const priorityTone = {
+  none: "text-[var(--color-text-muted)]",
+  low: "text-blue-500",
+  medium: "text-orange-500",
+  high: "text-red-500",
 };
 
 const dotColor = {
@@ -95,7 +102,7 @@ export function TaskCard({
   return (
     <>
       <article
-        className={`relative border-b border-[var(--color-border)] bg-[var(--color-surface)] px-0 ${compact ? "py-2" : "py-3"} transition duration-[var(--motion-fast)] last:border-b-0 ${completed ? "opacity-75" : ""}`}
+        className={`soft-card relative rounded-[16px] px-3 ${compact ? "py-2.5" : "py-3.5"} transition duration-[var(--motion-fast)] ${suggested && !completed ? "bg-gradient-to-r from-emerald-50/90 to-white/85 ring-1 ring-emerald-100 dark:from-emerald-500/12 dark:to-white/5 dark:ring-emerald-500/20" : ""} ${completed ? "opacity-78" : ""}`}
         draggable={Boolean(onDragStart && onDropTask)}
         onDragStart={() => onDragStart?.(task)}
         onDragOver={(event) => event.preventDefault()}
@@ -103,16 +110,15 @@ export function TaskCard({
         onTouchStart={(event) => setTouchStartX(event.changedTouches[0]?.clientX ?? null)}
         onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
       >
-        {task.priority === "high" && !completed ? <span className="absolute left-0 top-3 h-8 w-[2px] rounded-full bg-[var(--color-danger)]" /> : null}
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           {onDragStart && onDropTask ? (
             <span className="mt-1 hidden h-8 w-5 shrink-0 cursor-grab items-center justify-center text-[var(--color-text-muted)] sm:flex" aria-hidden="true">
               <GripVertical size={17} />
             </span>
           ) : null}
           <button
-            className={`ml-3 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-sm transition ${
-              completed ? "border-[var(--color-success)] bg-[var(--color-success)] text-white" : "border-[var(--color-border)] bg-[var(--color-surface)] text-transparent"
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] border text-sm transition ${
+              completed ? "border-[var(--color-success)] bg-[var(--color-success)] text-white shadow-[0_8px_18px_rgb(47_191_115_/_0.22)]" : "border-[#aaa6cf] bg-white/65 text-transparent hover:border-[var(--color-brand)] dark:bg-white/10"
             }`}
             onClick={() => (completed ? onUndo?.(task) : onComplete?.(task))}
             aria-label={completed ? "撤销完成" : "完成任务"}
@@ -121,16 +127,19 @@ export function TaskCard({
           </button>
 
           <button className="min-w-0 flex-1 text-left" onClick={() => setDetailsOpen(true)}>
-            <div className={`break-words text-[15px] font-medium leading-[22px] ${completed ? "text-[var(--color-text-muted)] line-through decoration-[0.8px]" : "text-[var(--color-text)]"}`}>
+            <div className={`break-words text-[15px] font-bold leading-[22px] ${completed ? "text-[var(--color-text-muted)] line-through decoration-[0.8px]" : "text-[var(--color-text)]"}`}>
               {task.title}
-              {suggested && !completed ? <span className="ml-2 rounded-[var(--radius-xs)] bg-[var(--color-brand-soft)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-brand)]">建议先做</span> : null}
+              {suggested && !completed ? <span className="ml-2 rounded-[8px] bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/15">建议先做</span> : null}
             </div>
-            <div className="mt-0.5 flex items-center gap-2 overflow-hidden text-[13px] leading-[18px] text-[var(--color-text-secondary)]">
+            <div className="mt-1 flex flex-wrap items-center gap-2 overflow-hidden text-[13px] leading-[18px] text-[var(--color-text-secondary)]">
               <span className="inline-flex items-center gap-1">
-                <span className={`h-2 w-2 rounded-full ${dotColor[category as keyof typeof dotColor] ?? "bg-slate-300"}`} />
+                <Clock3 size={14} />
+                {task.allDay || (!task.startTime && !task.dueTime) ? "全天" : task.dueTime ? `${task.dueTime}前` : task.startTime ? task.startTime : ""}
+              </span>
+              <span className="inline-flex items-center rounded-[8px] bg-[var(--color-brand-soft)] px-2 py-0.5 text-[var(--color-brand)]">
                 {category}
               </span>
-              {task.allDay || (!task.startTime && !task.dueTime) ? <span>全天</span> : task.dueTime ? <span>{task.dueTime}前</span> : task.startTime ? <span>{task.startTime}</span> : null}
+              <span className={`h-2 w-2 rounded-full ${dotColor[category as keyof typeof dotColor] ?? "bg-slate-300"}`} />
               {showEstimatedTime && task.estimatedMinutes ? <span>预计{task.estimatedMinutes}分钟</span> : null}
               {subtaskTotal > 0 ? <span>{subtaskDone}/{subtaskTotal} 子任务</span> : null}
               {task.recurringTemplateId || task.repeatRule ? <Repeat2 size={13} aria-label="周期任务" /> : null}
@@ -140,8 +149,14 @@ export function TaskCard({
           </button>
 
           <div className="relative shrink-0">
+            {task.priority !== "none" && !completed ? (
+              <span className={`mb-1 flex items-center justify-end gap-1 text-xs font-bold ${priorityTone[task.priority]}`}>
+                <Flag size={15} fill="currentColor" />
+                {priorityText[task.priority]}
+              </span>
+            ) : null}
             <button
-              className="mr-1 flex h-9 w-9 items-center justify-center rounded-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"
+              className="ml-auto flex h-8 w-8 items-center justify-center rounded-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"
               onClick={() => setMenuOpen((value) => !value)}
               aria-label="更多操作"
             >
