@@ -141,7 +141,7 @@ export interface TaskReminder {
 }
 
 export type ThemeMode = "light" | "dark" | "system";
-export type ThemeColor = "blueviolet" | "sky" | "teal" | "orange";
+export type ThemeColor = "sky" | "teal" | "orange" | "rose";
 export type LayoutDensity = "standard" | "compact";
 
 export interface ReminderPreferences {

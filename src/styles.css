@@ -109,6 +109,18 @@
     linear-gradient(180deg, #fffefd 0%, var(--color-page) 52%, #fff7e9 100%);
 }
 
+[data-theme-color="rose"] {
+  --color-brand: #e04f75;
+  --color-brand-2: #f08a65;
+  --color-brand-rgb: 224 79 117;
+  --color-brand-soft: #fff0f4;
+  --color-border: rgb(224 79 117 / 0.15);
+  --color-page: #fff8fa;
+  --page-bg:
+    radial-gradient(circle at 14% 0%, rgb(var(--color-brand-rgb) / 0.1), transparent 28%),
+    linear-gradient(180deg, #fffdfd 0%, var(--color-page) 52%, #fff5f1 100%);
+}
+
 [data-density="compact"] {
   --page-x: 12px;
   --gap-card: 8px;

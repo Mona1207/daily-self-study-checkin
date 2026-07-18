@@ -9,6 +9,7 @@ import {
   FileJson,
   HelpCircle,
   Info,
+  MessageCircle,
   NotebookPen,
   Palette,
   Plus,
@@ -18,6 +19,7 @@ import {
   Tags,
   Trash2,
   Upload,
+  UserRound,
 } from "lucide-react";
 import {
   AppDatabase,
@@ -54,7 +56,7 @@ interface SettingsPageProps {
   notify: (type: "success" | "error" | "info", message: string) => void;
 }
 
-type Panel = "task" | "reminders" | "appearance" | "data" | "about";
+type Panel = "account" | "reminders" | "appearance" | "data" | "tags" | "reflections" | "recurring" | "help" | "about";
 
 const inputClass =
   "min-h-11 w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-brand)] focus:bg-[var(--color-surface)]";
@@ -67,7 +69,13 @@ const makeCategory = (name: string, color: string, order: number): TaskCategory 
   createdAt: new Date().toISOString(),
 });
 
-const categoryColors = ["#526DF6", "#2698EA", "#18A999", "#22B983", "#F59E42", "#EF5B5B", "#7C5CF6", "#8A94A6"];
+const categoryColors = ["#18A999", "#2698EA", "#F28A2E", "#E04F75", "#22B983", "#8A94A6", "#50C38A", "#F59E42"];
+const themeOptions: Array<{ value: NonNullable<AppSettings["themeColor"]>; label: string; color: string; soft: string }> = [
+  { value: "teal", label: "青绿", color: "#18A999", soft: "#E9FBF8" },
+  { value: "sky", label: "天蓝", color: "#2698EA", soft: "#E9F5FF" },
+  { value: "orange", label: "暖橙", color: "#F28A2E", soft: "#FFF2E5" },
+  { value: "rose", label: "玫红", color: "#E04F75", soft: "#FFF0F4" },
+];
 
 export function SettingsPage({
   database,
@@ -81,8 +89,9 @@ export function SettingsPage({
   notify,
 }: SettingsPageProps) {
   const [panel, setPanel] = useState<Panel | null>(null);
+  const [profileName, setProfileName] = useState(settings.userName || settings.studentName || "我");
   const [categoryName, setCategoryName] = useState("");
-  const [categoryColor, setCategoryColor] = useState("#526DF6");
+  const [categoryColor, setCategoryColor] = useState("#18A999");
   const [importMode, setImportMode] = useState<"merge" | "replace">("merge");
   const [templateOpen, setTemplateOpen] = useState(false);
   const [templateDraft, setTemplateDraft] = useState({
@@ -115,6 +124,17 @@ export function SettingsPage({
   const updateSetting = (patch: Partial<AppSettings>) => {
     onUpdateSettings({ ...settings, ...patch });
     notify("success", "设置已保存。");
+  };
+
+  const selectThemeColor = (themeColor: NonNullable<AppSettings["themeColor"]>) => {
+    document.documentElement.dataset.themeColor = themeColor;
+    updateSetting({ themeColor });
+  };
+
+  const deleteReflection = (date: string) => {
+    if (!window.confirm(`确定删除 ${date} 的每日小记吗？`)) return;
+    onReplaceDatabase({ ...database, reflections: database.reflections.filter((reflection) => reflection.date !== date) });
+    notify("success", "每日小记已删除。");
   };
 
   const createTemplate = (event: FormEvent) => {
@@ -187,18 +207,25 @@ export function SettingsPage({
     notify("success", "数据已清空。");
   };
 
-  const renderMain = () => {
-    const menuItems: Array<{ key: Panel; icon: JSX.Element; title: string; tone: string }> = [
-      { key: "about", icon: <ShieldCheck size={23} />, title: "账号与安全", tone: "text-[var(--color-brand)]" },
-      { key: "reminders", icon: <Bell size={23} />, title: "提醒设置", tone: "text-orange-500" },
-      { key: "appearance", icon: <Palette size={23} />, title: "主题外观", tone: "text-emerald-500" },
-      { key: "data", icon: <Download size={23} />, title: "数据导出", tone: "text-sky-500" },
-      { key: "task", icon: <Tags size={23} />, title: "标签管理", tone: "text-violet-500" },
-      { key: "task", icon: <NotebookPen size={23} />, title: "每日小记管理", tone: "text-amber-500" },
-      { key: "about", icon: <HelpCircle size={23} />, title: "帮助与反馈", tone: "text-blue-500" },
-      { key: "about", icon: <Info size={23} />, title: "关于我们", tone: "text-slate-400" },
-    ];
+  const renderMenuGroup = (title: string, items: Array<{ key: Panel; icon: JSX.Element; title: string; tone: string; detail?: string }>) => (
+    <section>
+      <h2 className="mb-2 px-1 text-[12px] font-black text-[var(--color-text-secondary)]">{title}</h2>
+      <div className="soft-card overflow-hidden rounded-[16px] px-3">
+        {items.map((item) => (
+          <button key={`${item.title}-${item.key}`} className="flex min-h-[54px] w-full items-center gap-3 border-b border-[var(--color-border)] text-left last:border-b-0" onClick={() => setPanel(item.key)}>
+            <span className={`flex h-9 w-9 shrink-0 items-center justify-center ${item.tone}`}>{item.icon}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[16px] font-bold text-[var(--color-text)]">{item.title}</span>
+              {item.detail ? <span className="mt-0.5 block truncate text-xs text-[var(--color-text-secondary)]">{item.detail}</span> : null}
+            </span>
+            <ChevronRight className="text-[var(--color-text-muted)]" size={20} />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
 
+  const renderMain = () => {
     return (
       <div className="space-y-4 pb-20">
         <div className="morning-illustration -mx-[var(--page-x)] -mt-4 px-[var(--page-x)] pb-3 pt-6">
@@ -207,15 +234,23 @@ export function SettingsPage({
           </div>
         </div>
 
-        <section className="soft-card overflow-hidden rounded-[18px] px-3.5">
-          {menuItems.map((item) => (
-            <button key={`${item.title}-${item.key}`} className="flex min-h-[56px] w-full items-center gap-3 border-b border-[var(--color-border)] text-left last:border-b-0" onClick={() => setPanel(item.key)}>
-              <span className={`flex h-9 w-9 items-center justify-center ${item.tone}`}>{item.icon}</span>
-              <span className="min-w-0 flex-1 text-[16px] font-bold text-[var(--color-text)]">{item.title}</span>
-              <ChevronRight className="text-[var(--color-text-muted)]" size={21} />
-            </button>
-          ))}
-        </section>
+        {renderMenuGroup("账户", [
+          { key: "account", icon: <ShieldCheck size={23} />, title: "账号与安全", detail: "本地账号、保护设置", tone: "text-[var(--color-brand)]" },
+        ])}
+        {renderMenuGroup("偏好", [
+          { key: "appearance", icon: <Palette size={23} />, title: "主题外观", detail: `${themeOptions.find((item) => item.value === settings.themeColor)?.label ?? "青绿"} · ${settings.themeMode === "dark" ? "深色" : settings.themeMode === "system" ? "跟随系统" : "浅色"}`, tone: "text-emerald-500" },
+          { key: "reminders", icon: <Bell size={23} />, title: "提醒设置", detail: describeNotificationPermission(settings.reminderPreferences?.permissionStatus ?? getNotificationPermission()), tone: "text-orange-500" },
+        ])}
+        {renderMenuGroup("任务与记录", [
+          { key: "tags", icon: <Tags size={23} />, title: "标签管理", detail: `${categories.length} 个标签`, tone: "text-[var(--color-brand)]" },
+          { key: "reflections", icon: <NotebookPen size={23} />, title: "每日小记管理", detail: `${database.reflections.length} 条记录`, tone: "text-amber-500" },
+          { key: "recurring", icon: <RefreshCw size={23} />, title: "周期任务", detail: `${database.recurringTemplates.length} 个模板`, tone: "text-emerald-500" },
+        ])}
+        {renderMenuGroup("数据与支持", [
+          { key: "data", icon: <Download size={23} />, title: "数据导出", detail: "备份、恢复、导入", tone: "text-sky-500" },
+          { key: "help", icon: <HelpCircle size={23} />, title: "帮助与反馈", detail: "使用建议与反馈入口", tone: "text-blue-500" },
+          { key: "about", icon: <Info size={23} />, title: "关于我们", detail: `版本 ${APP_VERSION}`, tone: "text-slate-400" },
+        ])}
 
         <section className="soft-card rounded-[16px] p-4">
           <div>
@@ -236,12 +271,18 @@ export function SettingsPage({
     </div>
   );
 
-  const renderTaskPanel = () => (
+  const renderTagsPanel = () => (
     <div className="space-y-5">
-      {renderHeader("任务设置")}
-      <CollapsibleSection id="settings-categories" title="分类管理" count={categories.length} defaultExpanded>
-        <h2 className="text-base font-semibold">分类管理</h2>
-        <form className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]" onSubmit={addCategory}>
+      {renderHeader("标签管理")}
+      <section className="soft-card rounded-[16px] p-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[16px] font-black">新建标签</h2>
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">用于任务分类和统计筛选</p>
+          </div>
+          <span className="rounded-[10px] bg-[var(--color-brand-soft)] px-2.5 py-1 text-xs font-black text-[var(--color-brand)]">{categories.length}</span>
+        </div>
+        <form className="mt-3 grid grid-cols-[1fr_auto] gap-2" onSubmit={addCategory}>
           <input className={inputClass} value={categoryName} onChange={(event) => setCategoryName(event.target.value)} placeholder="新分类名称" />
           <Button icon={<Plus size={18} />}>添加</Button>
         </form>
@@ -250,13 +291,18 @@ export function SettingsPage({
             <button key={color} className={`h-8 w-8 rounded-full ring-2 ${categoryColor === color ? "ring-[var(--color-brand)]" : "ring-transparent"}`} style={{ backgroundColor: color }} onClick={() => setCategoryColor(color)} aria-label={`选择分类颜色 ${color}`} />
           ))}
         </div>
-        <div className="mt-4 space-y-2">
+      </section>
+      <section className="grid grid-cols-2 gap-2.5">
           {categories.map((category) => (
-            <div key={category.id} className={`flex items-center gap-3 rounded-[10px] bg-[var(--color-surface-muted)] p-3 ${category.hidden ? "opacity-55" : ""}`}>
-              <span className="h-3 w-3 rounded-full" style={{ backgroundColor: category.color ?? "#E8EEFF" }} />
-              <input className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none" value={category.name} onChange={(event) => saveCategories(categories.map((item) => (item.id === category.id ? { ...item, name: event.target.value } : item)))} />
-              <button className="min-h-10 rounded-[10px] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]" onClick={() => saveCategories(categories.map((item) => (item.id === category.id ? { ...item, hidden: !item.hidden } : item)))}>{category.hidden ? "显示" : "隐藏"}</button>
-              <button className="flex h-10 w-10 items-center justify-center rounded-[10px] text-[var(--color-danger)] hover:bg-[var(--color-surface)]" onClick={() => {
+            <div key={category.id} className={`soft-card rounded-[14px] p-3 ${category.hidden ? "opacity-55" : ""}`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="h-3.5 w-3.5 shrink-0 rounded-full" style={{ backgroundColor: category.color ?? "#E8EEFF" }} />
+                <button className="min-h-8 rounded-[9px] px-2 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]" onClick={() => saveCategories(categories.map((item) => (item.id === category.id ? { ...item, hidden: !item.hidden } : item)))}>{category.hidden ? "显示" : "隐藏"}</button>
+              </div>
+              <input className="mt-2 min-h-8 w-full bg-transparent text-[15px] font-black outline-none" value={category.name} onChange={(event) => saveCategories(categories.map((item) => (item.id === category.id ? { ...item, name: event.target.value } : item)))} />
+              <div className="mt-2 flex items-center justify-between gap-2 text-xs text-[var(--color-text-secondary)]">
+                <span>{tasks.filter((task) => task.subject === category.name || task.categoryId === category.id).length} 个任务</span>
+                <button className="flex h-8 w-8 items-center justify-center rounded-[9px] text-[var(--color-danger)] hover:bg-[var(--color-surface-muted)]" onClick={() => {
                 const mode = window.prompt("删除分类会影响相关任务。输入 1 移动到“其他”，输入 2 仅移除分类，其他内容取消。");
                 if (mode !== "1" && mode !== "2") return;
                 saveCategories(categories.filter((item) => item.id !== category.id));
@@ -270,12 +316,18 @@ export function SettingsPage({
                 });
                 notify("success", mode === "1" ? "分类已删除，请在任务编辑中确认相关任务分类。" : "分类已移除。");
               }} aria-label="删除分类">
-                <Trash2 size={17} />
-              </button>
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
           ))}
-        </div>
-      </CollapsibleSection>
+      </section>
+    </div>
+  );
+
+  const renderRecurringPanel = () => (
+    <div className="space-y-5">
+      {renderHeader("周期任务")}
       <CollapsibleSection id="settings-recurring-active" title="周期任务" count={database.recurringTemplates.length} subtitle="正在使用" defaultExpanded>
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -345,6 +397,37 @@ export function SettingsPage({
     </div>
   );
 
+  const renderAccountPanel = () => (
+    <div className="space-y-5">
+      {renderHeader("账号与安全")}
+      <section className="soft-card rounded-[16px] p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[var(--color-brand-soft)] text-[var(--color-brand)]">
+            <UserRound size={24} />
+          </div>
+          <div>
+            <h2 className="text-[16px] font-black">本地账号</h2>
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">数据保存在当前设备</p>
+          </div>
+        </div>
+        <label className="mt-4 block text-sm font-semibold">
+          昵称
+          <input className={`${inputClass} mt-2`} value={profileName} onChange={(event) => setProfileName(event.target.value)} placeholder="输入昵称" />
+        </label>
+        <Button className="mt-3" variant="secondary" icon={<Save size={18} />} onClick={() => updateSetting({ userName: profileName.trim() || "我", studentName: profileName.trim() || "我" })}>保存昵称</Button>
+      </section>
+      <section className="soft-card rounded-[16px] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[16px] font-black">敏感操作保护</h2>
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">导入、清空等操作前再次确认</p>
+          </div>
+          <input type="checkbox" checked={settings.requireAdminPasswordEverySession} onChange={(event) => updateSetting({ requireAdminPasswordEverySession: event.target.checked })} />
+        </div>
+      </section>
+    </div>
+  );
+
   const renderAppearancePanel = () => (
     <div className="space-y-5">
       {renderHeader("外观设置")}
@@ -352,8 +435,23 @@ export function SettingsPage({
         <div className="grid grid-cols-3 gap-2">
           {(["light", "dark", "system"] as const).map((mode) => <button key={mode} className={`min-h-10 rounded-[10px] text-sm font-semibold ${settings.themeMode === mode ? "bg-[var(--color-brand)] text-white" : "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]"}`} onClick={() => updateSetting({ themeMode: mode, darkMode: mode === "dark" })}>{mode === "light" ? "浅色" : mode === "dark" ? "深色" : "跟随系统"}</button>)}
         </div>
-        <div className="mt-4 flex gap-2">
-          {(["blueviolet", "sky", "teal", "orange"] as const).map((color) => <button key={color} className={`min-h-10 flex-1 rounded-[10px] text-sm font-semibold ${settings.themeColor === color ? "bg-[var(--color-brand)] text-white" : "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]"}`} onClick={() => updateSetting({ themeColor: color })}>{color === "blueviolet" ? "蓝紫" : color === "sky" ? "天蓝" : color === "teal" ? "青绿" : "橙色"}</button>)}
+        <div className="mt-4 grid grid-cols-2 gap-2.5">
+          {themeOptions.map((option) => {
+            const active = settings.themeColor === option.value || (!settings.themeColor && option.value === "teal");
+            return (
+              <button
+                key={option.value}
+                className={`min-h-[58px] rounded-[14px] border p-2.5 text-left transition ${active ? "border-[var(--color-brand)] bg-[var(--color-brand-soft)]" : "border-[var(--color-border)] bg-[var(--color-surface-muted)]"}`}
+                onClick={() => selectThemeColor(option.value)}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="h-6 w-6 rounded-full ring-2 ring-white" style={{ backgroundColor: option.color }} />
+                  <span className="text-[15px] font-black" style={{ color: active ? option.color : "var(--color-text)" }}>{option.label}</span>
+                </span>
+                <span className="mt-2 block h-2 rounded-full" style={{ background: `linear-gradient(90deg, ${option.color}, ${option.soft})` }} />
+              </button>
+            );
+          })}
         </div>
       </CollapsibleSection>
       <CollapsibleSection id="settings-animation" title="动画效果" defaultExpanded={false}>
@@ -413,6 +511,74 @@ export function SettingsPage({
     </div>
   );
 
+  const renderReflectionsPanel = () => {
+    const reflectionItems = [...database.reflections].sort((a, b) => b.date.localeCompare(a.date));
+    const moodLabel: Record<string, string> = { great: "开心", good: "不错", normal: "平静", difficult: "低落", adjust: "调整" };
+    return (
+      <div className="space-y-5">
+        {renderHeader("每日小记管理")}
+        <section className="grid grid-cols-3 gap-2.5">
+          <div className="soft-card rounded-[14px] p-3">
+            <div className="text-xs text-[var(--color-text-secondary)]">记录数</div>
+            <div className="mt-2 text-[24px] font-black text-[var(--color-brand)]">{reflectionItems.length}</div>
+          </div>
+          <div className="soft-card rounded-[14px] p-3">
+            <div className="text-xs text-[var(--color-text-secondary)]">最近</div>
+            <div className="mt-2 text-[15px] font-black">{reflectionItems[0]?.date.slice(5) ?? "暂无"}</div>
+          </div>
+          <div className="soft-card rounded-[14px] p-3">
+            <div className="text-xs text-[var(--color-text-secondary)]">平均能量</div>
+            <div className="mt-2 text-[24px] font-black">{reflectionItems.length ? Math.round(reflectionItems.reduce((sum, item) => sum + (item.energy ?? 3), 0) / reflectionItems.length) : 0}</div>
+          </div>
+        </section>
+        <section className="space-y-2.5">
+          {reflectionItems.length === 0 ? (
+            <div className="soft-card rounded-[16px] p-4 text-sm text-[var(--color-text-secondary)]">还没有每日小记。</div>
+          ) : (
+            reflectionItems.map((reflection) => (
+              <div key={reflection.id} className="soft-card rounded-[14px] p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[15px] font-black">{reflection.date}</div>
+                    <div className="mt-1 text-xs text-[var(--color-text-secondary)]">{moodLabel[reflection.mood] ?? "记录"} · 能量 {reflection.energy ?? 3}/5</div>
+                  </div>
+                  <button className="flex h-9 w-9 items-center justify-center rounded-[10px] text-[var(--color-danger)] hover:bg-[var(--color-surface-muted)]" onClick={() => deleteReflection(reflection.date)} aria-label="删除小记">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                {reflection.notes ? <p className="mt-2 line-clamp-4 text-sm leading-6 text-[var(--color-text-secondary)]">{reflection.notes}</p> : null}
+              </div>
+            ))
+          )}
+        </section>
+      </div>
+    );
+  };
+
+  const renderHelpPanel = () => (
+    <div className="space-y-5">
+      {renderHeader("帮助与反馈")}
+      <section className="soft-card rounded-[16px] p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[var(--color-brand-soft)] text-[var(--color-brand)]">
+            <MessageCircle size={23} />
+          </div>
+          <div>
+            <h2 className="text-[16px] font-black">反馈</h2>
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">当前版本 {APP_VERSION}</p>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-2">
+          <Button variant="secondary" onClick={() => notify("info", "请把问题截图和操作步骤发给开发者。")}>反馈问题</Button>
+          <Button variant="secondary" onClick={() => setPanel("data")}>备份与恢复数据</Button>
+        </div>
+      </section>
+      <section className="soft-card rounded-[16px] p-4 text-sm leading-6 text-[var(--color-text-secondary)]">
+        所有任务和小记默认保存在本机。更换设备前，请先在“数据导出”里导出完整备份。
+      </section>
+    </div>
+  );
+
   const renderAboutPanel = () => (
     <div className="space-y-5">
       {renderHeader("关于")}
@@ -427,9 +593,13 @@ export function SettingsPage({
   );
 
   if (!panel) return renderMain();
-  if (panel === "task") return renderTaskPanel();
+  if (panel === "account") return renderAccountPanel();
   if (panel === "reminders") return renderRemindersPanel();
   if (panel === "appearance") return renderAppearancePanel();
+  if (panel === "tags") return renderTagsPanel();
+  if (panel === "reflections") return renderReflectionsPanel();
+  if (panel === "recurring") return renderRecurringPanel();
   if (panel === "data") return renderDataPanel();
+  if (panel === "help") return renderHelpPanel();
   return renderAboutPanel();
 }

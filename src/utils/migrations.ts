@@ -98,7 +98,7 @@ export const normalizeSettings = (raw: unknown): AppSettings => {
     darkMode: asBoolean(raw.darkMode, base.darkMode),
     themeMode: raw.themeMode === "dark" || raw.themeMode === "system" ? raw.themeMode : raw.darkMode === true ? "dark" : "light",
     themeColor:
-      raw.themeColor === "sky" || raw.themeColor === "teal" || raw.themeColor === "orange" || raw.themeColor === "blueviolet"
+      raw.themeColor === "sky" || raw.themeColor === "teal" || raw.themeColor === "orange" || raw.themeColor === "rose"
         ? raw.themeColor
         : base.themeColor,
     weekStartsOn: raw.weekStartsOn === 0 ? 0 : 1,
