@@ -40,6 +40,7 @@ const makeDraft = (date: string, reflection?: DailyReflection): DailyReflection 
 };
 
 export function ReflectionPanel({ date = getTodayString(), reflections = [], emphasized, onSave, notify }: ReflectionPanelProps) {
+  const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(false);
   const today = getTodayString();
   const currentReflection = useMemo(() => reflections.find((reflection) => reflection.date === date), [date, reflections]);
@@ -66,43 +67,53 @@ export function ReflectionPanel({ date = getTodayString(), reflections = [], emp
 
   return (
     <>
-      <button className="block w-full text-left" onClick={openEditor}>
-        <div className={`soft-card rounded-[16px] px-3 py-3 ${emphasized ? "ring-2 ring-[var(--color-brand)]/20" : ""}`}>
-          <div className="flex min-h-9 items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[var(--color-brand-soft)] text-[var(--color-brand)]">
-                <BookMarked size={20} strokeWidth={1.8} />
-              </div>
-              <h2 className="text-[16px] font-black">每日小记</h2>
-            </div>
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-text-secondary)]">
-              记录生活，遇见更好的自己 <ChevronRight size={15} />
+      <section className={`soft-card rounded-[16px] px-3 py-2.5 ${emphasized ? "ring-2 ring-[var(--color-brand)]/20" : ""}`}>
+        <button className="flex min-h-9 w-full items-center justify-between gap-3 text-left" onClick={() => setExpanded((value) => !value)}>
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-soft)] text-[var(--color-brand)]">
+              <BookMarked size={20} strokeWidth={1.8} />
             </span>
-          </div>
-          <div className="mt-3 grid grid-cols-3 gap-2.5">
-            <div className="rounded-[14px] bg-white/72 px-2.5 py-3 shadow-[var(--shadow-soft)] dark:bg-white/10">
-              <div className="flex items-center gap-1 text-sm font-bold"><span>💕</span>心情</div>
-              <div className={`mt-3 flex h-12 items-center justify-center rounded-full ${moodTone}`}>
-                <MoodIcon size={34} strokeWidth={1.7} />
+            <span className="min-w-0">
+              <span className="block text-[16px] font-black">每日小记</span>
+              <span className="mt-0.5 block truncate text-xs text-[var(--color-text-secondary)]">
+                {todayReflection
+                  ? `${MOOD_LABEL[todayReflection.mood]} · 能量 ${todayReflection.energy ?? 3}/5`
+                  : readOnly ? "这一天还没有小记" : "展开后填写心情、能量和小记"}
+              </span>
+            </span>
+          </span>
+          <ChevronRight className={`shrink-0 text-[var(--color-text-muted)] transition-transform ${expanded ? "rotate-90" : ""}`} size={18} />
+        </button>
+        {expanded && (
+          <div className="mt-3 border-t border-[var(--color-border)] pt-3">
+            <div className="grid grid-cols-3 gap-2.5">
+              <div className="rounded-[12px] bg-white/72 px-2.5 py-2.5 dark:bg-white/10">
+                <div className="flex items-center gap-1 text-xs font-bold"><span>💕</span>心情</div>
+                <div className={`mt-2 flex h-10 items-center justify-center ${moodTone}`}>
+                  <MoodIcon size={28} strokeWidth={1.7} />
+                </div>
+                <p className="mt-1 text-center text-[11px] font-semibold text-[var(--color-text-secondary)]">{todayReflection ? MOOD_LABEL[todayReflection.mood] : "未记录"}</p>
               </div>
-              <p className="mt-2 text-center text-xs font-semibold text-[var(--color-text-secondary)]">{todayReflection ? MOOD_LABEL[todayReflection.mood] : "未记录"}</p>
-            </div>
-            <div className="rounded-[14px] bg-white/72 px-2.5 py-3 shadow-[var(--shadow-soft)] dark:bg-white/10">
-              <div className="flex items-center gap-1 text-sm font-bold"><Zap className="text-amber-400" size={15} />能量</div>
-              <div className="mt-3 text-center text-[24px] font-black text-[var(--color-brand)]">{Math.round(((todayReflection?.energy ?? 3) / 5) * 100)}%</div>
-              <div className="mt-2 grid grid-cols-5 gap-1">
-                {[1, 2, 3, 4, 5].map((energy) => <span key={energy} className={`h-7 rounded-[6px] ${energy <= (todayReflection?.energy ?? 3) ? "bg-[var(--color-brand)]" : "bg-[var(--color-surface-muted)]"}`} />)}
+              <div className="rounded-[12px] bg-white/72 px-2.5 py-2.5 dark:bg-white/10">
+                <div className="flex items-center gap-1 text-xs font-bold"><Zap className="text-amber-400" size={14} />能量</div>
+                <div className="mt-2 text-center text-[20px] font-black text-[var(--color-brand)]">{Math.round(((todayReflection?.energy ?? 3) / 5) * 100)}%</div>
+                <div className="mt-2 grid grid-cols-5 gap-1">
+                  {[1, 2, 3, 4, 5].map((energy) => <span key={energy} className={`h-5 rounded-[5px] ${energy <= (todayReflection?.energy ?? 3) ? "bg-[var(--color-brand)]" : "bg-[var(--color-surface-muted)]"}`} />)}
+                </div>
+              </div>
+              <div className="rounded-[12px] bg-[#fff8e9]/90 px-2.5 py-2.5 dark:bg-amber-500/10">
+                <div className="flex items-center gap-1 text-xs font-bold"><Pencil className="text-amber-500" size={14} />小记</div>
+                <p className="mt-2 line-clamp-4 text-xs leading-5 text-[var(--color-text)]">
+                  {todayReflection?.notes || (readOnly ? "无记录" : "展开后填写")}
+                </p>
               </div>
             </div>
-            <div className="rounded-[14px] bg-[#fff8e9]/90 px-2.5 py-3 shadow-[var(--shadow-soft)] dark:bg-amber-500/10">
-              <div className="flex items-center gap-1 text-sm font-bold"><Pencil className="text-amber-500" size={15} />今日小记</div>
-              <p className="mt-3 line-clamp-4 text-[13px] leading-5 text-[var(--color-text)]">
-                {todayReflection?.notes || (readOnly ? "这一天还没有小记" : "今天完成了很多重要的事，感觉特别充实！")}
-              </p>
-            </div>
+            <Button className="mt-3 w-full" variant="secondary" onClick={openEditor}>
+              {readOnly ? "查看小记" : todayReflection ? "编辑小记" : "填写小记"}
+            </Button>
           </div>
-        </div>
-      </button>
+        )}
+      </section>
 
       <Modal title={readOnly ? "查看小记" : "每日小记"} open={open} onClose={() => setOpen(false)}>
         <form className="space-y-5" onSubmit={submit}>

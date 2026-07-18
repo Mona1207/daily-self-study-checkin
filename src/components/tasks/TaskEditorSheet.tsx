@@ -1,6 +1,5 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
-  AlarmClock,
   Bell,
   CalendarDays,
   ChevronDown,
@@ -102,39 +101,6 @@ const parseSubtasks = (value: string, oldTask?: StudyTask) => {
     .filter((item) => item.title);
 };
 
-function FieldRow({
-  icon,
-  label,
-  value,
-  children,
-}: {
-  icon: ReactNode;
-  label: string;
-  value?: string;
-  children: ReactNode;
-}) {
-  return (
-    <label className="relative flex min-h-12 items-center gap-3 border-b border-[var(--color-border)] px-3 last:border-b-0">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center text-[var(--color-text-secondary)]">{icon}</span>
-      <span className="min-w-0 flex-1 text-[15px] font-medium text-[var(--color-text)]">{label}</span>
-      <span className="flex max-w-[52%] items-center gap-1 text-right text-[14px] text-[var(--color-text-secondary)]">
-        <span className="truncate">{value}</span>
-        <ChevronDown size={15} />
-      </span>
-      {children}
-    </label>
-  );
-}
-
-function SectionBlock({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section>
-      <h3 className="mb-2 px-1 text-[13px] font-bold text-[var(--color-text-secondary)]">{title}</h3>
-      <div className="soft-card rounded-[18px] p-3">{children}</div>
-    </section>
-  );
-}
-
 function OptionGrid<T extends string>({
   value,
   options,
@@ -179,12 +145,12 @@ function OptionGrid<T extends string>({
 const inputClass =
   "min-h-11 w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 text-[14px] text-[var(--color-text)] outline-none transition focus:border-[var(--color-brand)] focus:bg-[var(--color-surface)]";
 
+type SettingPanel = "date" | "time" | "subject" | "priority" | "duration" | "reminder" | "repeat" | "evidence" | "content";
+
 export function TaskEditorSheet({ open, mode = "create", task, initialDate, onClose, onCreate, onUpdate, notify }: TaskEditorSheetProps) {
   const initialDraft = useMemo(() => makeDraft(task, initialDate), [initialDate, task]);
   const [draft, setDraft] = useState<DraftState>(initialDraft);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [notesOpen, setNotesOpen] = useState(Boolean(task?.description));
-  const [subtasksOpen, setSubtasksOpen] = useState(Boolean(task?.subtasks?.length));
+  const [activeSetting, setActiveSetting] = useState<SettingPanel | null>(null);
   const [saving, setSaving] = useState(false);
   const historyIdRef = useRef<string | null>(null);
   const ignoreNextPopRef = useRef(false);
@@ -193,11 +159,9 @@ export function TaskEditorSheet({ open, mode = "create", task, initialDate, onCl
   useEffect(() => {
     if (!open) return;
     setDraft(initialDraft);
-    setMoreOpen(false);
-    setNotesOpen(Boolean(task?.description));
-    setSubtasksOpen(Boolean(task?.subtasks?.length));
+    setActiveSetting(null);
     setSaving(false);
-  }, [initialDraft, open, task?.description, task?.subtasks?.length]);
+  }, [initialDraft, open]);
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(initialDraft);
   const hasContent = Boolean(draft.title.trim() || draft.description.trim() || draft.subtasks.trim());
@@ -259,6 +223,118 @@ export function TaskEditorSheet({ open, mode = "create", task, initialDate, onCl
   const dateValue = draft.date;
   const startValue = draft.allDay || !draft.startTime ? "未设置" : draft.startTime;
   const dueValue = draft.allDay || !draft.dueTime ? "未设置" : draft.dueTime;
+  const subtaskCount = parseSubtasks(draft.subtasks, task).length;
+  const timeSummary = draft.allDay ? "全天" : [draft.startTime, draft.dueTime].filter(Boolean).join(" - ") || "未设置";
+  const contentSummary = `${subtaskCount ? `${subtaskCount} 个子任务` : "无子任务"}${draft.description ? " · 有备注" : ""}`;
+
+  const settingCards: Array<{ key: SettingPanel; label: string; value: string; icon: ReactNode }> = [
+    { key: "date", label: "日期", value: draft.date, icon: <CalendarDays size={18} /> },
+    { key: "time", label: "时间", value: timeSummary, icon: <Clock3 size={18} /> },
+    { key: "subject", label: "分类", value: draft.subject, icon: <Folder size={18} /> },
+    { key: "priority", label: "优先级", value: priorityLabels[draft.priority], icon: <Flag size={18} /> },
+    { key: "duration", label: "预计时长", value: draft.estimatedMinutes ? `${draft.estimatedMinutes} 分钟` : "未设置", icon: <Timer size={18} /> },
+    { key: "reminder", label: "提醒", value: draft.reminderEnabled ? `提前 ${draft.reminderOffset} 分钟` : "关闭", icon: <Bell size={18} /> },
+    { key: "repeat", label: "重复", value: repeatLabels[draft.repeatType], icon: <Repeat2 size={18} /> },
+    { key: "evidence", label: "完成记录", value: evidenceLabels[draft.evidenceRequirement], icon: <FileText size={18} /> },
+    { key: "content", label: "内容", value: contentSummary, icon: <ListChecks size={18} /> },
+  ];
+
+  const renderSettingPanel = () => {
+    if (!activeSetting) return null;
+    return (
+      <section className="soft-card rounded-[16px] p-3">
+        {activeSetting === "date" && (
+          <label className="block text-[13px] font-bold text-[var(--color-text-secondary)]">
+            日期
+            <input className={`${inputClass} mt-2`} type="date" value={draft.date} onChange={(event) => updateDraft({ date: event.target.value })} />
+          </label>
+        )}
+        {activeSetting === "time" && (
+          <div className="space-y-3">
+            <button
+              type="button"
+              className={`flex min-h-11 w-full items-center justify-between rounded-[10px] border px-3 text-left transition ${
+                draft.allDay ? "border-[var(--color-brand)] bg-[var(--color-brand-soft)] text-[var(--color-brand)]" : "border-[var(--color-border)] bg-[var(--color-surface-muted)]"
+              }`}
+              onClick={() => updateDraft({ allDay: !draft.allDay })}
+            >
+              <span className="flex items-center gap-2 text-[14px] font-semibold"><Clock3 size={17} />全天任务</span>
+              <span className={`h-6 w-11 rounded-full p-0.5 transition ${draft.allDay ? "bg-[var(--color-brand)]" : "bg-[var(--color-border)]"}`}>
+                <span className={`block h-5 w-5 rounded-full bg-white transition ${draft.allDay ? "translate-x-5" : ""}`} />
+              </span>
+            </button>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="text-[13px] font-bold text-[var(--color-text-secondary)]">开始<input className={`${inputClass} mt-2`} type="time" value={draft.startTime} disabled={draft.allDay} onChange={(event) => updateDraft({ startTime: event.target.value, allDay: false })} placeholder={startValue} /></label>
+              <label className="text-[13px] font-bold text-[var(--color-text-secondary)]">截止<input className={`${inputClass} mt-2`} type="time" value={draft.dueTime} disabled={draft.allDay} onChange={(event) => updateDraft({ dueTime: event.target.value, allDay: false })} placeholder={dueValue} /></label>
+            </div>
+          </div>
+        )}
+        {activeSetting === "subject" && <OptionGrid value={draft.subject} options={SUBJECTS.map((subject) => ({ value: subject, label: subject }))} onChange={(subject) => updateDraft({ subject })} columns="grid-cols-3" />}
+        {activeSetting === "priority" && (
+          <OptionGrid
+            value={draft.priority}
+            options={[
+              { value: "none", label: priorityLabels.none, helper: "不标记" },
+              { value: "low", label: priorityLabels.low, helper: "轻松处理" },
+              { value: "medium", label: priorityLabels.medium, helper: "正常推进" },
+              { value: "high", label: priorityLabels.high, helper: "优先完成" },
+            ]}
+            onChange={(priority) => updateDraft({ priority })}
+            columns="grid-cols-2"
+          />
+        )}
+        {activeSetting === "duration" && (
+          <label className="block text-[13px] font-bold text-[var(--color-text-secondary)]">
+            预计时长
+            <input className={`${inputClass} mt-2`} type="number" min="0" value={draft.estimatedMinutes} onChange={(event) => updateDraft({ estimatedMinutes: event.target.value })} placeholder="分钟" />
+          </label>
+        )}
+        {activeSetting === "reminder" && (
+          <div className="space-y-3">
+            <button
+              type="button"
+              className={`flex min-h-11 w-full items-center justify-between rounded-[10px] border px-3 text-left transition ${
+                draft.reminderEnabled ? "border-[var(--color-brand)] bg-[var(--color-brand-soft)] text-[var(--color-brand)]" : "border-[var(--color-border)] bg-[var(--color-surface-muted)]"
+              }`}
+              onClick={() => updateDraft({ reminderEnabled: !draft.reminderEnabled })}
+            >
+              <span className="flex items-center gap-2 text-[14px] font-semibold"><Bell size={17} />提醒</span>
+              <span className={`h-6 w-11 rounded-full p-0.5 transition ${draft.reminderEnabled ? "bg-[var(--color-brand)]" : "bg-[var(--color-border)]"}`}>
+                <span className={`block h-5 w-5 rounded-full bg-white transition ${draft.reminderEnabled ? "translate-x-5" : ""}`} />
+              </span>
+            </button>
+            <OptionGrid
+              value={draft.reminderOffset}
+              disabled={!draft.reminderEnabled}
+              options={[
+                { value: "5", label: "5 分钟" },
+                { value: "15", label: "15 分钟" },
+                { value: "30", label: "30 分钟" },
+                { value: "60", label: "1 小时" },
+                { value: "1440", label: "1 天" },
+              ]}
+              onChange={(reminderOffset) => updateDraft({ reminderOffset })}
+              columns="grid-cols-2"
+            />
+          </div>
+        )}
+        {activeSetting === "repeat" && <OptionGrid value={draft.repeatType} options={Object.entries(repeatLabels).map(([value, label]) => ({ value: value as RecurrenceType, label }))} onChange={(repeatType) => updateDraft({ repeatType })} columns="grid-cols-2" />}
+        {activeSetting === "evidence" && <OptionGrid value={draft.evidenceRequirement} options={Object.entries(evidenceLabels).map(([value, label]) => ({ value: value as EvidenceRequirement, label }))} onChange={(evidenceRequirement) => updateDraft({ evidenceRequirement })} columns="grid-cols-2" />}
+        {activeSetting === "content" && (
+          <div className="space-y-3">
+            <label className="block text-[13px] font-bold text-[var(--color-text-secondary)]">
+              子任务
+              <textarea className="mt-2 min-h-24 w-full resize-none rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-3 text-[14px] leading-[22px] outline-none focus:border-[var(--color-brand)]" value={draft.subtasks} onChange={(event) => updateDraft({ subtasks: event.target.value })} placeholder="每行一个子任务" />
+            </label>
+            <label className="block text-[13px] font-bold text-[var(--color-text-secondary)]">
+              备注
+              <textarea className="mt-2 min-h-24 w-full resize-none rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-3 text-[14px] leading-[22px] outline-none focus:border-[var(--color-brand)]" value={draft.description} onChange={(event) => updateDraft({ description: event.target.value })} placeholder="补充说明、链接或注意事项" />
+            </label>
+          </div>
+        )}
+      </section>
+    );
+  };
 
   useEffect(() => {
     if (!open || historyIdRef.current) return;
@@ -321,185 +397,37 @@ export function TaskEditorSheet({ open, mode = "create", task, initialDate, onCl
                 placeholder="写下要完成的事"
                 aria-label="任务名称"
               />
-              <div className="grid gap-3 border-t border-[var(--color-border)] pt-3 sm:grid-cols-2">
-                <label className="text-[13px] font-medium text-[var(--color-text-secondary)]">
-                  日期
-                  <span className="mt-1 flex items-center gap-2">
-                    <CalendarDays size={18} className="shrink-0 text-[var(--color-brand)]" />
-                    <input className={inputClass} type="date" value={draft.date} onChange={(event) => updateDraft({ date: event.target.value })} />
-                  </span>
-                </label>
-                <label className="text-[13px] font-medium text-[var(--color-text-secondary)]">
-                  预计时长
-                  <span className="mt-1 flex items-center gap-2">
-                    <Timer size={18} className="shrink-0 text-[var(--color-brand)]" />
-                    <input className={inputClass} type="number" min="0" value={draft.estimatedMinutes} onChange={(event) => updateDraft({ estimatedMinutes: event.target.value })} placeholder="分钟" />
-                  </span>
-                </label>
-              </div>
             </section>
-
-            <SectionBlock title="基础设置">
-              <div className="space-y-4">
-                <div>
-                  <div className="mb-2 flex items-center gap-2 text-[14px] font-semibold text-[var(--color-text)]"><Folder size={17} />分类</div>
-                  <OptionGrid
-                    value={draft.subject}
-                    options={SUBJECTS.map((subject) => ({ value: subject, label: subject }))}
-                    onChange={(subject) => updateDraft({ subject })}
-                    columns="grid-cols-3 sm:grid-cols-5"
-                  />
-                </div>
-                <div>
-                  <div className="mb-2 flex items-center gap-2 text-[14px] font-semibold text-[var(--color-text)]"><Flag size={17} />优先级</div>
-                  <OptionGrid
-                    value={draft.priority}
-                    options={[
-                      { value: "none", label: priorityLabels.none, helper: "不标记" },
-                      { value: "low", label: priorityLabels.low, helper: "轻松处理" },
-                      { value: "medium", label: priorityLabels.medium, helper: "正常推进" },
-                      { value: "high", label: priorityLabels.high, helper: "优先完成" },
-                    ]}
-                    onChange={(priority) => updateDraft({ priority })}
-                    columns="grid-cols-2 sm:grid-cols-4"
-                  />
-                </div>
-              </div>
-            </SectionBlock>
-
-            <SectionBlock title="时间安排">
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  className={`flex min-h-12 w-full items-center justify-between rounded-[10px] border px-3 text-left transition ${
-                    draft.allDay ? "border-[var(--color-brand)] bg-[var(--color-brand-soft)] text-[var(--color-brand)]" : "border-[var(--color-border)] bg-[var(--color-surface-muted)]"
-                  }`}
-                  onClick={() => updateDraft({ allDay: !draft.allDay })}
-                >
-                  <span className="flex items-center gap-2 text-[14px] font-semibold"><Clock3 size={17} />全天任务</span>
-                  <span className={`h-6 w-11 rounded-full p-0.5 transition ${draft.allDay ? "bg-[var(--color-brand)]" : "bg-[var(--color-border)]"}`}>
-                    <span className={`block h-5 w-5 rounded-full bg-white transition ${draft.allDay ? "translate-x-5" : ""}`} />
-                  </span>
-                </button>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="text-[13px] font-medium text-[var(--color-text-secondary)]">
-                    开始时间
-                    <span className="mt-1 flex items-center gap-2">
-                      <Clock3 size={18} className="shrink-0 text-[var(--color-brand)]" />
-                      <input className={inputClass} type="time" value={draft.startTime} disabled={draft.allDay} onChange={(event) => updateDraft({ startTime: event.target.value, allDay: false })} placeholder={startValue} />
-                    </span>
-                  </label>
-                  <label className="text-[13px] font-medium text-[var(--color-text-secondary)]">
-                    截止时间
-                    <span className="mt-1 flex items-center gap-2">
-                      <AlarmClock size={18} className="shrink-0 text-[var(--color-brand)]" />
-                      <input className={inputClass} type="time" value={draft.dueTime} disabled={draft.allDay} onChange={(event) => updateDraft({ dueTime: event.target.value, allDay: false })} placeholder={dueValue} />
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </SectionBlock>
 
             <section>
-              <button type="button" className="flex min-h-11 w-full items-center justify-between px-1 text-left" onClick={() => setMoreOpen((value) => !value)}>
-                <span>
-                  <span className="block text-[17px] font-semibold text-[var(--color-text)]">更多设置</span>
-                  <span className="mt-0.5 block text-[13px] text-[var(--color-text-secondary)]">提醒、重复、子任务和备注</span>
-                </span>
-                <ChevronDown className={`text-[var(--color-text-muted)] transition-transform ${moreOpen ? "rotate-180" : ""}`} size={18} />
-              </button>
-              {moreOpen && (
-                <div className="mt-2 space-y-4">
-                  <SectionBlock title="提醒与重复">
-                    <div className="space-y-4">
-                      <button
-                        type="button"
-                        className={`flex min-h-12 w-full items-center justify-between rounded-[10px] border px-3 text-left transition ${
-                          draft.reminderEnabled ? "border-[var(--color-brand)] bg-[var(--color-brand-soft)] text-[var(--color-brand)]" : "border-[var(--color-border)] bg-[var(--color-surface-muted)]"
-                        }`}
-                        onClick={() => updateDraft({ reminderEnabled: !draft.reminderEnabled })}
-                      >
-                        <span className="flex items-center gap-2 text-[14px] font-semibold"><Bell size={17} />提醒</span>
-                        <span className={`h-6 w-11 rounded-full p-0.5 transition ${draft.reminderEnabled ? "bg-[var(--color-brand)]" : "bg-[var(--color-border)]"}`}>
-                          <span className={`block h-5 w-5 rounded-full bg-white transition ${draft.reminderEnabled ? "translate-x-5" : ""}`} />
-                        </span>
-                      </button>
-                      <div>
-                        <div className="mb-2 text-[13px] font-medium text-[var(--color-text-secondary)]">提前提醒</div>
-                        <OptionGrid
-                          value={draft.reminderOffset}
-                          disabled={!draft.reminderEnabled}
-                          options={[
-                            { value: "5", label: "5 分钟" },
-                            { value: "15", label: "15 分钟" },
-                            { value: "30", label: "30 分钟" },
-                            { value: "60", label: "1 小时" },
-                            { value: "1440", label: "1 天" },
-                          ]}
-                          onChange={(reminderOffset) => updateDraft({ reminderOffset })}
-                          columns="grid-cols-2 sm:grid-cols-5"
-                        />
-                      </div>
-                      <div>
-                        <div className="mb-2 flex items-center gap-2 text-[14px] font-semibold text-[var(--color-text)]"><Repeat2 size={17} />重复</div>
-                        <OptionGrid
-                          value={draft.repeatType}
-                          options={Object.entries(repeatLabels).map(([value, label]) => ({ value: value as RecurrenceType, label }))}
-                          onChange={(repeatType) => updateDraft({ repeatType })}
-                          columns="grid-cols-2 sm:grid-cols-3"
-                        />
-                      </div>
-                      <div>
-                        <div className="mb-2 flex items-center gap-2 text-[14px] font-semibold text-[var(--color-text)]"><FileText size={17} />完成记录</div>
-                        <OptionGrid
-                          value={draft.evidenceRequirement}
-                          options={Object.entries(evidenceLabels).map(([value, label]) => ({ value: value as EvidenceRequirement, label }))}
-                          onChange={(evidenceRequirement) => updateDraft({ evidenceRequirement })}
-                          columns="grid-cols-2 sm:grid-cols-5"
-                        />
-                      </div>
-                    </div>
-                  </SectionBlock>
-
-                  <SectionBlock title="内容">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)]">
-                        <button type="button" className="flex min-h-12 w-full items-center gap-3 px-3 text-left" onClick={() => setSubtasksOpen((value) => !value)}>
-                          <ListChecks size={18} className="text-[var(--color-brand)]" />
-                          <span className="min-w-0 flex-1 text-[15px] font-medium text-[var(--color-text)]">子任务</span>
-                          <span className="text-[14px] text-[var(--color-text-secondary)]">{parseSubtasks(draft.subtasks, task).length || "未添加"}</span>
-                          <ChevronDown className={`text-[var(--color-text-muted)] transition-transform ${subtasksOpen ? "rotate-180" : ""}`} size={15} />
-                        </button>
-                        {subtasksOpen && (
-                          <textarea
-                            className="min-h-32 w-full resize-none border-t border-[var(--color-border)] bg-transparent px-3 py-3 text-[15px] leading-[22px] outline-none placeholder:text-[var(--color-text-muted)]"
-                            value={draft.subtasks}
-                            onChange={(event) => updateDraft({ subtasks: event.target.value })}
-                            placeholder="每行一个子任务"
-                          />
-                        )}
-                      </div>
-                      <div className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)]">
-                        <button type="button" className="flex min-h-12 w-full items-center gap-3 px-3 text-left" onClick={() => setNotesOpen((value) => !value)}>
-                          <FileText size={18} className="text-[var(--color-brand)]" />
-                          <span className="min-w-0 flex-1 text-[15px] font-medium text-[var(--color-text)]">备注</span>
-                          <span className="max-w-[42%] truncate text-[14px] text-[var(--color-text-secondary)]">{draft.description || "未填写"}</span>
-                          <ChevronDown className={`text-[var(--color-text-muted)] transition-transform ${notesOpen ? "rotate-180" : ""}`} size={15} />
-                        </button>
-                        {notesOpen && (
-                          <textarea
-                            className="min-h-32 w-full resize-none border-t border-[var(--color-border)] bg-transparent px-3 py-3 text-[15px] leading-[22px] outline-none placeholder:text-[var(--color-text-muted)]"
-                            value={draft.description}
-                            onChange={(event) => updateDraft({ description: event.target.value })}
-                            placeholder="补充说明、链接或注意事项"
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </SectionBlock>
-                </div>
-              )}
+              <h3 className="mb-2 px-1 text-[13px] font-bold text-[var(--color-text-secondary)]">任务设置</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {settingCards.map((item) => {
+                  const active = activeSetting === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className={`min-h-[74px] rounded-[14px] border px-3 py-2.5 text-left transition ${
+                        active
+                          ? "border-[var(--color-brand)] bg-[var(--color-brand-soft)] text-[var(--color-brand)]"
+                          : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]"
+                      }`}
+                      onClick={() => setActiveSetting(active ? null : item.key)}
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="text-[var(--color-brand)]">{item.icon}</span>
+                        <ChevronDown className={`text-[var(--color-text-muted)] transition-transform ${active ? "rotate-180" : ""}`} size={15} />
+                      </span>
+                      <span className="mt-2 block text-[14px] font-bold">{item.label}</span>
+                      <span className="mt-1 block truncate text-xs text-[var(--color-text-secondary)]">{item.value}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </section>
+
+            {renderSettingPanel()}
           </div>
         </div>
         <div className="shrink-0 px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-2">

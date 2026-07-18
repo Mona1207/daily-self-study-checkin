@@ -65,7 +65,7 @@ export const defaultSettings = (): AppSettings => ({
   showEstimatedTime: true,
   darkMode: false,
   themeMode: "light",
-  themeColor: "blueviolet",
+  themeColor: "teal",
   weekStartsOn: 1,
   reminderPreferences: {
     defaultOffsetMinutes: 15,

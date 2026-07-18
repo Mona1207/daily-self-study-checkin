@@ -50,7 +50,7 @@ export default function App() {
       const systemDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
       const mode = settings.themeMode ?? (settings.darkMode ? "dark" : "light");
       document.documentElement.classList.toggle("dark", mode === "dark" || (mode === "system" && systemDark));
-      document.documentElement.dataset.themeColor = settings.themeColor ?? "blueviolet";
+      document.documentElement.dataset.themeColor = settings.themeColor ?? "teal";
       const pageColor = getComputedStyle(document.documentElement).getPropertyValue("--color-page").trim();
       document.querySelector('meta[name="theme-color"]')?.setAttribute("content", pageColor || "#f7f8fa");
       document.body.style.backgroundColor = pageColor || "";

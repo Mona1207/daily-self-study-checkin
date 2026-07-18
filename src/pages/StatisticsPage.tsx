@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CalendarDays, CheckSquare, Flame, HelpCircle } from "lucide-react";
+import { CheckSquare, Flame } from "lucide-react";
 import { DailyReflection, StudyTask, SUBJECTS } from "../types/task";
 import { Card } from "../components/common/Card";
 import { CollapsibleSection } from "../components/common/CollapsibleSection";
@@ -104,14 +104,14 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
         </div>
       </div>
 
-      <div className="flex h-11 gap-2 overflow-x-auto pb-1">
+      <div className="soft-card grid grid-cols-4 gap-1 rounded-[16px] p-1">
         {(Object.keys(rangeLabel) as RangeKey[]).map((key) => (
           <button
             key={key}
-            className={`shrink-0 rounded-[14px] px-4 text-[14px] font-bold transition ${range === key ? "bg-[image:var(--brand-gradient)] text-white shadow-[var(--brand-shadow)]" : "soft-card text-[var(--color-text-secondary)]"}`}
+            className={`min-h-10 rounded-[12px] px-1 text-[13px] font-bold transition ${range === key ? "bg-[var(--color-brand)] text-white shadow-[var(--brand-shadow)]" : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"}`}
             onClick={() => setRange(key)}
           >
-            {key === "custom" ? <span className="inline-flex items-center gap-2"><CalendarDays size={17} />自定义日期</span> : rangeLabel[key]}
+            {rangeLabel[key]}
           </button>
         ))}
       </div>
@@ -122,26 +122,26 @@ export function StatisticsPage({ tasks, onGoDate }: StatisticsPageProps) {
         </div>
       )}
 
-      <section className="grid grid-cols-3 gap-2.5">
-          <div className="soft-card rounded-[18px] bg-[var(--color-brand-soft)]/70 p-3">
-            <div className="flex items-center gap-1 text-xs font-bold text-[var(--color-text-secondary)]">完成率 <HelpCircle size={14} /></div>
-            <div className="mt-4 flex items-center justify-between gap-2">
-              <div className="text-[27px] font-black text-[var(--color-brand)]">{completionRate}%</div>
-              <div className="h-10 w-10 shrink-0 rounded-full" style={{ background: `conic-gradient(var(--color-brand) ${completionRate * 3.6}deg, rgb(var(--color-brand-rgb) / 0.14) 0deg)` }} />
-            </div>
-            <div className="mt-3 text-xs text-[var(--color-text-secondary)]">较上周期 <span className="text-rose-500">↑ {Math.max(1, Math.round(completionRate / 6))}%</span></div>
+      <section className="soft-card rounded-[18px] p-3">
+        <div className="grid grid-cols-3 divide-x divide-[var(--color-border)]">
+          <div className="px-2">
+            <div className="text-xs font-bold text-[var(--color-text-secondary)]">完成率</div>
+            <div className="mt-2 text-[25px] font-black text-[var(--color-brand)]">{completionRate}%</div>
+            <div className="mt-2"><ProgressBar percent={completionRate} label="" /></div>
+            <div className="mt-2 text-[11px] text-[var(--color-text-secondary)]">较上周期 <span className="text-rose-500">↑ {Math.max(1, Math.round(completionRate / 6))}%</span></div>
           </div>
-          <div className="soft-card rounded-[18px] bg-emerald-50/80 p-3 dark:bg-emerald-500/10">
+          <div className="px-2">
             <div className="flex items-center gap-1 text-xs font-bold text-[var(--color-text-secondary)]">完成任务数 <CheckSquare className="text-[var(--color-success)]" size={15} /></div>
-            <div className="mt-5 text-[27px] font-black">{completed}</div>
-            <div className="mt-3 text-xs text-[var(--color-text-secondary)]">按时 {onTimeRate}%</div>
+            <div className="mt-3 text-[25px] font-black">{completed}</div>
+            <div className="mt-2 text-xs text-[var(--color-text-secondary)]">按时 {onTimeRate}%</div>
           </div>
-          <div className="soft-card rounded-[18px] bg-orange-50/85 p-3 dark:bg-orange-500/10">
+          <div className="px-2">
             <div className="flex items-center gap-1 text-xs font-bold text-[var(--color-text-secondary)]">连续打卡 <Flame className="text-orange-500" size={15} /></div>
-            <div className="mt-5 text-[27px] font-black">{streak}</div>
-            <div className="mt-3 text-xs text-[var(--color-text-secondary)]">最高 {Math.max(streak, 1)} 天</div>
+            <div className="mt-3 text-[25px] font-black">{streak}</div>
+            <div className="mt-2 text-xs text-[var(--color-text-secondary)]">最高 {Math.max(streak, 1)} 天</div>
           </div>
-        </section>
+        </div>
+      </section>
 
       <CollapsibleSection id="statistics-trend" title="完成趋势" subtitle={hasData ? `${rangeLabel[range]} · ${trendMode === "count" ? "完成数量" : "完成率"}` : undefined} defaultExpanded>
         <div className="mb-3 flex rounded-[14px] bg-white/60 p-1 shadow-[var(--shadow-soft)] dark:bg-white/10">

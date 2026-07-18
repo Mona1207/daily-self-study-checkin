@@ -1,5 +1,5 @@
-import { FormEvent, useMemo, useState } from "react";
-import { CalendarDays, CheckCircle2, ClipboardList, Clock3, Plus, SlidersHorizontal, Sparkles } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CalendarDays, CheckCircle2, ClipboardList, Clock3, Plus } from "lucide-react";
 import { AppSettings, DailyReflection, StudyTask, TaskEvidence } from "../types/task";
 import { CollapsibleSection } from "../components/common/CollapsibleSection";
 import { ProgressBar } from "../components/common/ProgressBar";
@@ -124,7 +124,6 @@ export function TodayPage({
   const today = getTodayString();
   const todayDate = new Date();
   const [quickOpen, setQuickOpen] = useState(false);
-  const [quickTitle, setQuickTitle] = useState("");
   const [draggedTask, setDraggedTask] = useState<StudyTask | null>(null);
 
   const summary = summarizeDay(tasks, today);
@@ -142,23 +141,6 @@ export function TodayPage({
 
   const createFromEditor = (value: TaskEditorValue) => {
     onAddTask(value);
-  };
-
-  const submitInlineQuick = (event: FormEvent) => {
-    event.preventDefault();
-    const title = quickTitle.trim();
-    if (!title) return notify("error", "先写下任务名称。");
-    onAddTask({
-      title,
-      date: today,
-      allDay: true,
-      subject: "工作",
-      priority: "medium",
-      evidenceRequirement: "none",
-      sortOrder: Date.now(),
-    });
-    setQuickTitle("");
-    notify("success", "任务已添加。");
   };
 
   const reorderTask = (target: StudyTask) => {
@@ -242,20 +224,6 @@ export function TodayPage({
         )}
       </section>
 
-      <form className="soft-card flex min-h-[48px] items-center gap-2 rounded-[16px] px-3 py-2" onSubmit={submitInlineQuick}>
-        <Sparkles size={18} className="shrink-0 text-[var(--color-brand)]" />
-        <input
-          className="min-w-0 flex-1 bg-transparent text-[15px] leading-[22px] outline-none placeholder:text-[var(--color-text-muted)]"
-          value={quickTitle}
-          onChange={(event) => setQuickTitle(event.target.value)}
-          placeholder="添加今天要做的事..."
-          aria-label="快速添加今天任务"
-        />
-        <button type="button" className="flex h-9 w-9 items-center justify-center rounded-[12px] text-[var(--color-text-secondary)] hover:bg-white/70 dark:hover:bg-white/10" onClick={() => setQuickOpen(true)} aria-label="更多设置">
-          <SlidersHorizontal size={18} />
-        </button>
-      </form>
-
       <div className="flex items-center justify-between">
         <h2 className="text-[18px] font-black">今天的任务</h2>
         <button className="text-sm font-semibold text-[var(--color-text-secondary)]" onClick={onGoCalendar}>按时间⌄</button>
@@ -265,7 +233,6 @@ export function TodayPage({
         <div className="flex min-h-[220px] flex-col items-center justify-center text-center">
           <CalendarDays className="text-[var(--color-text-muted)]" size={30} strokeWidth={1.6} />
           <p className="mt-3 text-[15px] font-medium">今天还没有任务</p>
-          <button className="mt-2 min-h-10 px-2 text-sm font-medium text-[var(--color-brand)]" onClick={() => setQuickOpen(true)}>添加第一项任务</button>
         </div>
       ) : (
         <div className="space-y-4">
